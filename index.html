@@ -389,7 +389,10 @@ function detectaEncabezado(aoa) {
   return mejor;
 }
 function leeHoja(ws, filaEnc) {
-  const aoa = XLSX.utils.sheet_to_json(ws, { header: 1, raw: true, defval: null, blankrows: false });
+  // las celdas con error de Excel (#REF!, #N/A…) llegan vacías: se convierten a su texto para poder contarlas
+  for (const k of Object.keys(ws)) if (k[0] !== '!' && ws[k].t === 'e') ws[k] = { t: 's', v: ws[k].w || '#REF!' };
+  // con renglones vacíos incluidos, el número de fila coincide con el de Excel
+  const aoa = XLSX.utils.sheet_to_json(ws, { header: 1, raw: true, defval: null, blankrows: true });
   if (!aoa.length) return { cols: [], filas: [], filaEnc: 0, total: 0 };
   const h = filaEnc != null ? Math.min(Math.max(0, filaEnc), aoa.length - 1) : detectaEncabezado(aoa);
   let ncols = 0;
