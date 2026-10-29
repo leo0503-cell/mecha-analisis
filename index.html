@@ -92,6 +92,7 @@ main { padding: clamp(16px, 3vw, 32px) clamp(16px, 4vw, 40px) 64px; max-width: 1
   padding: 48px 24px; border: 2px dashed var(--borde); border-radius: 16px; background: var(--sup);
   cursor: pointer; transition: border-color .15s, background-color .15s;
 }
+.zona:focus-visible { outline: 3px solid var(--verde); outline-offset: 3px; }
 .zona:hover, .zona.sobre { border-color: var(--azul); background: var(--sup-2); }
 .zona strong { font-size: 17px; }
 .zona span { color: var(--tinta-2); font-size: 13px; }
@@ -99,7 +100,8 @@ main { padding: clamp(16px, 3vw, 32px) clamp(16px, 4vw, 40px) 64px; max-width: 1
 .promesas { list-style: none; padding: 0; margin: 20px 0 0; display: grid; gap: 10px; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); }
 .promesas li { background: var(--sup); border: 1px solid var(--borde); border-radius: 12px; padding: 12px 14px; font-size: 13px; color: var(--tinta-2); }
 .promesas b { color: var(--tinta); display: block; }
-.cargando { text-align: center; color: var(--tinta-2); margin-top: 16px; }
+.cargando { text-align: center; color: var(--tinta-2); margin: 16px 0; }
+.cargando.aviso { text-align: left; }
 
 /* fuente */
 .fuente { background: var(--sup); border: 1px solid var(--borde); border-radius: 14px; padding: 14px 16px; display: grid; gap: 10px; }
@@ -264,7 +266,7 @@ tbody tr:hover { background: var(--sup-2); }
 
 <main>
   <section id="carga" class="carga">
-    <label class="zona" id="zona">
+    <label class="zona" id="zona" tabindex="0" role="button" aria-label="Cargar archivo de Excel o CSV">
       <input type="file" id="archivo" accept=".xlsx,.xlsm,.xls,.csv,.ods" hidden>
       <svg viewBox="0 0 24 24" class="ico-subir" aria-hidden="true"><path d="M12 16V4m0 0-5 5m5-5 5 5M4 16v3a1 1 0 0 0 1 1h14a1 1 0 0 0 1-1v-3"/></svg>
       <strong>Arrastra aquí tu Excel o CSV</strong>
@@ -347,56 +349,86 @@ const mesLabel = (k) => MESES[k % 12] + ' ' + String(Math.floor(k / 12)).slice(2
 const DIA = 864e5;
 const norm = (s) => String(s ?? '').normalize('NFD').replace(/[̀-ͯ]/g, '').toLowerCase().trim();
 const suma = (a) => a.reduce((s, x) => s + x, 0);
+// sin spread: Math.min(...arr) revienta la pila con cientos de miles de valores
+const minimo = (a) => { let m = Infinity; for (const x of a) if (x < m) m = x; return m; };
+const maximo = (a) => { let m = -Infinity; for (const x of a) if (x > m) m = x; return m; };
+const diasDelMes = (d) => new Date(d.getFullYear(), d.getMonth() + 1, 0).getDate();
+/** la última fecha no prueba que el mes esté incompleto; solo se avisa cuando queda lejos de fin de mes */
+const avisoMesFinal = (maxF) => (maxF && diasDelMes(maxF) - maxF.getDate() >= 5 ? `Ojo: el último dato es del ${fFecha(maxF)}. Si ${mesLabel(mesKey(maxF))} no está completo, ese mes se verá más bajo de lo real.` : '');
 const letraCol = (i) => { let s = ''; i++; while (i > 0) { const m = (i - 1) % 26; s = String.fromCharCode(65 + m) + s; i = Math.floor((i - 1) / 26); } return s; };
 const guarda = (k, v) => { try { localStorage.setItem(k, JSON.stringify(v)); } catch { /* sin almacenamiento */ } };
 const lee = (k) => { try { return JSON.parse(localStorage.getItem(k)); } catch { return null; } };
 
 // ---------- lectura del archivo ----------
-const ERRORES = /^#(REF!|N\/A|DIV\/0!|VALUE!|NAME\?|NUM!|NULL!|¡REF!|N\/D|¡DIV\/0!|¡VALOR!)$/i;
+const ERRORES = /^#(REF!|N\/A|DIV\/0!|VALUE!|NAME\?|NUM!|NULL!|ERROR|¡REF!|N\/D|¡DIV\/0!|¡VALOR!|¿NOMBRE\?|¡NUM!|¡NULO!)$/i;
+const ERROR_CODIGO = { 0: '#NULL!', 7: '#DIV/0!', 15: '#VALUE!', 23: '#REF!', 29: '#NAME?', 36: '#NUM!', 42: '#N/A' };
+// renglones de resumen que no son datos: TOTAL, SUBTOTAL, SUMA RESUMEN…
+const TOTAL = /^(gran )?(sub)?total(es)?( (general|mapeo|ventas|piezas|importe|inventario|resumen))?:?$|^suma( (total|resumen))?:?$/;
 
-function diaLocal(d) {
-  // corrige los segundos de desfase que trae SheetJS en fechas de Excel
-  const t = new Date(d.getTime() + 12 * 3600e3);
-  return new Date(t.getFullYear(), t.getMonth(), t.getDate());
-}
-function serialAFecha(n) {
-  const u = new Date(Math.round((n - 25569) * DIA));
-  return new Date(u.getUTCFullYear(), u.getUTCMonth(), u.getUTCDate());
-}
+const fechaLocal = (y, m, d) => { const f = new Date(y, m - 1, d); return f.getFullYear() === y && f.getMonth() === m - 1 && f.getDate() === d ? f : null; };
 function limpia(v) {
   if (v == null) return { v: null };
-  if (v instanceof Date) return { v: isNaN(v) ? null : diaLocal(v) };
+  if (v instanceof Date) return { v: isNaN(v) ? null : new Date(v.getFullYear(), v.getMonth(), v.getDate()) };
   if (typeof v === 'number') return { v: isFinite(v) ? v : null };
   if (typeof v === 'boolean') return { v: v ? 1 : 0 };
   const s = String(v).trim();
   if (!s) return { v: null };
   if (ERRORES.test(s)) return { v: null, err: true };
-  if (/^-?\$?\s?\d[\d,]*(\.\d+)?%?$/.test(s) && !/^-?0\d/.test(s)) {
-    const n = parseFloat(s.replace(/[$,\s%]/g, ''));
-    if (isFinite(n)) return { v: s.endsWith('%') ? n / 100 : n };
+  // números: la coma solo como separador de miles (grupos de 3); "1,5" o "123,45" se quedan como texto
+  const neg = /^\(.*\)$/.test(s), t = neg ? s.slice(1, -1).trim() : s;
+  const mNum = /^(-)?\$?\s?(\d{1,3}(?:,\d{3})+|\d+)(\.\d+)?(%)?$/.exec(t);
+  if (mNum && !/^0\d/.test(mNum[2]) && mNum[2].replace(/,/g, '').length <= 15) {
+    let n = parseFloat(mNum[2].replace(/,/g, '') + (mNum[3] || ''));
+    if (mNum[1] || neg) n = -n;
+    return { v: mNum[4] ? n / 100 : n };
   }
+  // fechas escritas: dd/mm/aaaa (México) o aaaa-mm-dd, con hora opcional que se descarta
+  let mF = /^(\d{1,2})[/.-](\d{1,2})[/.-](\d{4}|\d{2})(?:[ T]\d{1,2}:\d{2}(?::\d{2})?)?$/.exec(s);
+  if (mF) { const y = +mF[3] < 100 ? 2000 + +mF[3] : +mF[3]; const f = fechaLocal(y, +mF[2], +mF[1]); if (f) return { v: f }; }
+  mF = /^(\d{4})-(\d{1,2})-(\d{1,2})(?:[ T].*)?$/.exec(s);
+  if (mF) { const f = fechaLocal(+mF[1], +mF[2], +mF[3]); if (f) return { v: f }; }
   return { v: s };
 }
 function detectaEncabezado(aoa) {
   let mejor = 0, puntos = 1;
   for (let i = 0; i < Math.min(aoa.length, 30); i++) {
     const unicos = new Set();
-    for (const c of aoa[i] || []) {
-      if (typeof c === 'string') { const s = c.trim(); if (s && !ERRORES.test(s) && isNaN(Number(s))) unicos.add(s); }
-    }
+    // solo cuenta texto de verdad: "1,000" o "05/10/2026" escritos como texto no son encabezados
+    for (const c of aoa[i] || []) { const x = limpia(c); if (typeof x.v === 'string') unicos.add(x.v); }
     if (unicos.size > puntos) { mejor = i; puntos = unicos.size; }
   }
   return mejor;
 }
+/** normaliza una hoja una sola vez: fechas desde su número de serie (respeta el sistema 1904) y errores como texto */
+/** número de serie → día de calendario; un serial a menos de 2 min de medianoche se toma como el día siguiente */
+function serialADia(v, date1904) {
+  const r = v - Math.floor(v) > 0.9986 ? Math.ceil(v) : v;
+  const p = XLSX.SSF.parse_date_code(r, { date1904 });
+  return p ? fechaLocal(p.y, p.m, p.d) : null;
+}
+function preparaHoja(ws, date1904) {
+  if (ws['!mecha']) return; ws['!mecha'] = true;
+  for (const k of Object.keys(ws)) {
+    if (k[0] === '!') continue;
+    const c = ws[k];
+    if (c.t === 'e') ws[k] = { t: 's', v: c.w || ERROR_CODIGO[c.v] || '#ERROR' };
+    else if (c.t === 'n' && c.z && XLSX.SSF.is_date(c.z)) {
+      const f = serialADia(c.v, date1904);
+      if (f) ws[k] = { t: 'd', v: f };
+    }
+  }
+}
 function leeHoja(ws, filaEnc) {
-  // las celdas con error de Excel (#REF!, #N/A…) llegan vacías: se convierten a su texto para poder contarlas
-  for (const k of Object.keys(ws)) if (k[0] !== '!' && ws[k].t === 'e') ws[k] = { t: 's', v: ws[k].w || '#REF!' };
-  // con renglones vacíos incluidos, el número de fila coincide con el de Excel
-  const aoa = XLSX.utils.sheet_to_json(ws, { header: 1, raw: true, defval: null, blankrows: true });
-  if (!aoa.length) return { cols: [], filas: [], filaEnc: 0, total: 0 };
+  const d1904 = !!(S.libro && S.libro.Workbook && S.libro.Workbook.WBProps && S.libro.Workbook.WBProps.date1904);
+  preparaHoja(ws, d1904);
+  // se lee desde A1 para que filas y letras coincidan con las de Excel
+  const rango = ws['!ref'] ? XLSX.utils.decode_range(ws['!ref']) : null;
+  if (!rango) return { cols: [], filas: [], numFila: [], filaEnc: 0, total: 0, totales: [] };
+  const aoa = XLSX.utils.sheet_to_json(ws, { header: 1, raw: true, defval: null, blankrows: true, range: { s: { r: 0, c: 0 }, e: rango.e } });
+  if (!aoa.length) return { cols: [], filas: [], numFila: [], filaEnc: 0, total: 0, totales: [] };
   const h = filaEnc != null ? Math.min(Math.max(0, filaEnc), aoa.length - 1) : detectaEncabezado(aoa);
   let ncols = 0;
-  for (let i = h; i < Math.min(aoa.length, h + 400); i++) ncols = Math.max(ncols, (aoa[i] || []).length);
+  for (let i = h; i < aoa.length; i++) ncols = Math.max(ncols, (aoa[i] || []).length);
 
   // encabezados: nombre propio; si se repite, se apellida con el título de arriba o con la columna previa
   // título de grupo: el renglón más cercano arriba con al menos dos textos distintos (salta renglones de totales)
@@ -408,7 +440,7 @@ function leeHoja(ws, filaEnc) {
   const enc = aoa[h] || [];
   const sup = []; let ultimo = null;
   for (let j = 0; j < ncols; j++) { const s = typeof arriba[j] === 'string' ? arriba[j].trim() : ''; if (s) ultimo = s; sup.push(ultimo); }
-  const base = []; for (let j = 0; j < ncols; j++) { const c = enc[j]; base.push(c == null || String(c).trim() === '' ? '' : String(c).replace(/\s+/g, ' ').trim()); }
+  const base = []; for (let j = 0; j < ncols; j++) { const c = enc[j]; base.push(c == null || String(c).trim() === '' ? '' : (c instanceof Date ? fFecha(c) : String(c)).replace(/\s+/g, ' ').trim()); }
   const cuenta = {}; base.forEach((b) => { if (b) cuenta[b] = (cuenta[b] || 0) + 1; });
   const nombres = []; const usados = new Set();
   // columnas calculadas (DIFERENCIA, CONFIABILIDAD…) se apellidan con la columna de datos que tienen a la izquierda
@@ -427,20 +459,29 @@ function leeHoja(ws, filaEnc) {
     usados.add(f); nombres.push(f);
   }
 
-  const filas = []; const errores = new Array(ncols).fill(0);
+  const filas = [], numFila = [], candidatos = []; const errores = new Array(ncols).fill(0);
   for (let i = h + 1; i < aoa.length; i++) {
-    const r = aoa[i] || []; const fila = new Array(ncols); let algo = false;
+    const r = aoa[i] || []; const fila = new Array(ncols); let algo = false, err = [];
     for (let j = 0; j < ncols; j++) {
-      const c = limpia(r[j]); fila[j] = c.v; if (c.err) errores[j]++; if (c.v != null) algo = true;
+      const c = limpia(r[j]); fila[j] = c.v; if (c.err) err.push(j); if (c.v != null) algo = true;
     }
-    if (algo) filas.push(fila);
+    // un renglón de total abre con la palabra TOTAL; "A, Total, 100" es una venta normal
+    const primero = fila.find((v) => v != null);
+    if (typeof primero === 'string' && TOTAL.test(norm(primero))) candidatos.push(filas.length);
+    err.forEach((j) => errores[j]++);
+    if (algo || err.length) { filas.push(fila); numFila.push(i + 1); }
   }
 
   const cols = nombres.map((nombre, j) => {
-    let num = 0, fecha = 0, txt = 0, llenos = 0;
-    for (const f of filas) { const v = f[j]; if (v == null) continue; llenos++; if (typeof v === 'number') num++; else if (v instanceof Date) fecha++; else txt++; }
+    let num = 0, fecha = 0, llenos = 0, serial = 0;
+    for (const f of filas) { const v = f[j]; if (v == null) continue; llenos++; if (typeof v === 'number') { num++; if (v > 20000 && v < 80000) serial++; } else if (v instanceof Date) fecha++; }
     let tipo = 'texto';
-    if (llenos && fecha / llenos >= 0.6) tipo = 'fecha';
+    // fechas con formato mezcladas con seriales sin formato también son una columna de fechas
+    if (llenos && (fecha / llenos >= 0.6 || (fecha && (fecha + serial) / llenos >= 0.6))) {
+      tipo = 'fecha';
+      // algunas celdas pueden venir como número de serie sin formato de fecha
+      for (const f of filas) if (typeof f[j] === 'number' && f[j] > 20000 && f[j] < 80000) f[j] = serialADia(f[j], d1904);
+    }
     else if (llenos && num / llenos >= 0.6) {
       tipo = 'num';
       // fechas guardadas como número de serie en columnas llamadas FECHA
@@ -448,14 +489,24 @@ function leeHoja(ws, filaEnc) {
         const nums = filas.map((f) => f[j]).filter((v) => typeof v === 'number');
         if (nums.length && nums.every((v) => v > 20000 && v < 80000)) {
           tipo = 'fecha';
-          for (const f of filas) if (typeof f[j] === 'number') f[j] = serialAFecha(f[j]);
+          for (const f of filas) if (typeof f[j] === 'number') f[j] = serialADia(f[j], d1904);
         }
       }
     }
     return { nombre, j, tipo, llenos, errores: errores[j] };
   }).filter((c) => c.llenos > 0 || c.errores > 0 || base[c.j]);
 
-  return { cols, filas, filaEnc: h, total: aoa.length };
+  // los candidatos a total que traen fecha son movimientos, no resúmenes
+  const colsFecha = cols.filter((c) => c.tipo === 'fecha').map((c) => c.j);
+  const fuera = new Set(candidatos.filter((i) => !colsFecha.some((j) => filas[i][j] instanceof Date)));
+  const totales = [...fuera].map((i) => numFila[i]);
+  if (fuera.size) {
+    // sus errores tampoco cuentan
+    for (const i of fuera) filas[i].forEach((v, j) => { if (v == null && ERRORES.test(String((aoa[numFila[i] - 1] || [])[j] ?? '').trim())) { const c = cols.find((x) => x.j === j); if (c) c.errores--; } });
+  }
+  const filasOk = [], numOk = [];
+  filas.forEach((f, i) => { if (!fuera.has(i)) { filasOk.push(f); numOk.push(numFila[i]); } });
+  return { cols, filas: filasOk, numFila: numOk, filaEnc: h, total: aoa.length, totales };
 }
 
 // ---------- estado ----------
@@ -525,11 +576,13 @@ function barrasH(datos, { colorDe, etiqueta = (d) => fmt(d.v), tip } = {}) {
 /** barras verticales por periodo */
 function barrasV(datos, { tip } = {}) {
   const H = 250, L = 52, R = 10, T = 12, B = 30, w = W - L - R, h = H - T - B;
-  const { max, paso } = escalaBonita(Math.max(...datos.map((d) => d.v), 0));
-  const min = Math.min(0, ...datos.map((d) => d.v));
+  const vMax = Math.max(0, maximo(datos.map((d) => d.v))), vMin = Math.min(0, minimo(datos.map((d) => d.v)));
+  // la escala sale del rango completo, con negativos, para no generar miles de líneas
+  const { paso } = escalaBonita(vMax - vMin);
+  const max = Math.ceil(vMax / paso) * paso, min = Math.floor(vMin / paso) * paso;
   const rango = max - min || 1, y = (v) => T + h - ((v - min) / rango) * h;
   let s = '';
-  for (let v = min < 0 ? -Math.ceil(-min / paso) * paso : 0; v <= max + 1e-9; v += paso) s += `<line x1="${L}" x2="${L + w}" y1="${y(v)}" y2="${y(v)}" stroke="var(--rejilla)"/><text x="${L - 8}" y="${y(v) + 4}" text-anchor="end">${corto(v)}</text>`;
+  for (let v = min; v <= max + paso * 1e-6; v += paso) s += `<line x1="${L}" x2="${L + w}" y1="${y(v)}" y2="${y(v)}" stroke="var(--rejilla)"/><text x="${L - 8}" y="${y(v) + 4}" text-anchor="end">${corto(v)}</text>`;
   const n = datos.length, banda = w / n, bw = Math.max(2, Math.min(42, banda - 2));
   const cada = Math.ceil(n / 12);
   datos.forEach((d, i) => {
@@ -682,10 +735,11 @@ const ANALISIS = [
     ],
     run(P, F) {
       const g = col(P.grupo), f = col(P.fecha), m = col(P.medida), d = P.desc ? col(P.desc) : -1;
-      const mapa = new Map(); let kMin = Infinity, kMax = -Infinity, ign = 0;
+      const mapa = new Map(); let kMin = Infinity, kMax = -Infinity, ign = 0, maxF = null;
       for (const r of F) {
         const k = r[g], fe = r[f], v = r[m];
         if (k == null || !(fe instanceof Date) || typeof v !== 'number') { ign++; continue; }
+        if (!maxF || fe > maxF) maxF = fe;
         const mk = mesKey(fe); kMin = Math.min(kMin, mk); kMax = Math.max(kMax, mk);
         const key = String(k); let e = mapa.get(key);
         if (!e) { e = { clave: key, desc: d >= 0 ? r[d] : null, meses: new Map(), valor: 0 }; mapa.set(key, e); }
@@ -699,6 +753,7 @@ const ANALISIS = [
         const serie = []; for (let k = kMin; k <= kMax; k++) serie.push(it.meses.get(k) || 0);
         const media = suma(serie) / nMeses; const sd = Math.sqrt(suma(serie.map((x) => (x - media) ** 2)) / nMeses);
         it.media = media; it.cv = media > 0 ? sd / media : null; it.mesesCon = serie.filter((x) => x !== 0).length;
+        it.desde = serie.findIndex((x) => x !== 0);
         it.xyz = it.cv == null ? '—' : it.cv <= P.cX ? 'X' : it.cv <= P.cY ? 'Y' : 'Z';
       }
       clasificaABC(items, 0.8, 0.95);
@@ -714,6 +769,10 @@ const ANALISIS = [
         `CZ (${m3.CZ || 0}): poco volumen y errático → candidatos a surtir solo bajo pedido.`,
       ];
       if (nMeses < 12) lectura.push(`Con menos de 12 meses la estacionalidad puede hacer que algo se vea errático sin serlo.`);
+      // primera venta no es lanzamiento: no se cambia el cálculo, solo se avisa
+      const tarde = val.filter((i) => i.desde >= 2);
+      if (tarde.length) lectura.push(`${tarde.length} elementos no tienen movimiento en los primeros meses (p. ej. ${tarde.slice(0, 3).map((i) => i.clave).join(', ')}). Si son nuevos, su variación sale más alta de lo real: revísalos aparte.`);
+      const avM = avisoMesFinal(maxF); if (avM) lectura.push(avM);
       if (ign) lectura.push(`${ign} renglones sin elemento, fecha o cantidad se ignoraron.`);
       const L = { A: 'mucho volumen', B: 'volumen medio', C: 'poco volumen', X: 'estable', Y: 'variable', Z: 'errática' };
       return {
@@ -739,6 +798,7 @@ const ANALISIS = [
       { id: 'desc', label: 'Descripción', tipo: '*', opc: true, guess: R.desc },
       { id: 'a', label: 'Conteo físico', tipo: 'num', guess: R.fisico },
       { id: 'b', label: 'Contra (sistema)', tipo: 'num', guess: [R.sistema, R.fisico] },
+      { id: 'tol', label: 'Tolerancia %', tipo: 'pct0', def: 0 },
     ],
     run(P, F) {
       const g = col(P.grupo), a = col(P.a), b = col(P.b), d = P.desc ? col(P.desc) : -1;
@@ -746,51 +806,71 @@ const ANALISIS = [
       const mapa = new Map(); let sinClave = 0;
       for (const r of F) {
         const k = r[g]; if (k == null) { sinClave++; continue; }
-        const va = typeof r[a] === 'number' ? r[a] : 0, vb = typeof r[b] === 'number' ? r[b] : 0;
         const key = String(k); let e = mapa.get(key);
-        if (!e) { e = { clave: key, desc: d >= 0 ? r[d] : null, a: 0, b: 0 }; mapa.set(key, e); }
-        e.a += va; e.b += vb;
+        if (!e) { e = { clave: key, desc: d >= 0 ? r[d] : null, a: 0, b: 0, faltaA: false, faltaB: false, neg: false }; mapa.set(key, e); }
+        // una celda vacía o con error no es un cero: no se sabe cuánto hay
+        if (typeof r[a] === 'number') e.a += r[a]; else e.faltaA = true;
+        if (typeof r[b] === 'number') e.b += r[b]; else e.faltaB = true;
+        // un negativo en cualquier renglón invalida la clave aunque al sumar se compense
+        if (r[a] < 0 || r[b] < 0) e.neg = true;
       }
-      const todos = [...mapa.values()];
-      const items = todos.filter((i) => i.a !== 0 || i.b !== 0);
-      if (!items.length) return { error: 'Ninguna clave tiene cantidad en esas columnas.' };
-      let sMin = 0, sMax = 0;
-      for (const i of items) {
+      const lista = [...mapa.values()];
+      const sinDato = lista.filter((i) => i.faltaA && i.faltaB && !i.a && !i.b).length;
+      const ceros = lista.filter((i) => !i.faltaA && !i.faltaB && i.a === 0 && i.b === 0 && !i.neg).length;
+      const todos = lista.filter((i) => i.a !== 0 || i.b !== 0 || i.neg || i.faltaA !== i.faltaB);
+      if (!todos.length) return { error: `Ninguna clave tiene cantidad en esas columnas (${ceros} en cero en las dos, ${sinDato} sin dato).` };
+      const incompletas = [], negativas = [], items = [];
+      for (const i of todos) {
         i.dif = i.a - i.b; i.abs = Math.abs(i.dif);
-        const x = Math.max(i.a, 0), y = Math.max(i.b, 0);
-        i.conf = Math.max(x, y) ? Math.min(x, y) / Math.max(x, y) : 0;
-        sMin += Math.min(x, y); sMax += Math.max(x, y);
+        if (i.faltaA || i.faltaB) { i.estado = 'Falta dato'; i.conf = null; incompletas.push(i); continue; }
+        if (i.neg || i.a < 0 || i.b < 0) { i.estado = 'Valores negativos'; i.conf = null; negativas.push(i); continue; }
+        i.conf = Math.max(i.a, i.b) ? Math.min(i.a, i.b) / Math.max(i.a, i.b) : 1;
         i.estado = i.dif === 0 ? 'Exacta' : i.b === 0 ? 'Solo en físico' : i.a === 0 ? 'Solo en sistema' : i.conf >= 0.95 ? 'Casi' : 'Diferencia';
+        items.push(i);
       }
-      const tA = suma(items.map((i) => i.a)), tB = suma(items.map((i) => i.b));
-      const confTot = Math.max(tA, tB) ? Math.min(tA, tB) / Math.max(tA, tB) : 0, confClave = sMax ? sMin / sMax : 0;
+      if (!items.length) return { error: `Ninguna clave tiene las dos cantidades completas y sin negativos (${incompletas.length} con dato faltante, ${negativas.length} con negativos, ${ceros} en cero en las dos, ${sinDato} sin dato).` };
+      let sMin = 0, sMax = 0;
+      for (const i of items) { sMin += Math.min(i.a, i.b); sMax += Math.max(i.a, i.b); }
+      // "por totales" replica al Excel: suma todo (vacíos como 0, negativos incluidos); "clave por clave" solo usa claves completas
+      const tA = suma(todos.map((i) => i.a)), tB = suma(todos.map((i) => i.b));
+      // con un total negativo el cociente no tiene sentido: se muestra sin porcentaje
+      const confTot = tA >= 0 && tB >= 0 && Math.max(tA, tB) > 0 ? Math.min(tA, tB) / Math.max(tA, tB) : null, confClave = sMax ? sMin / sMax : 0;
+      // exactitud tipo IRA: claves cuya diferencia cabe en la tolerancia, sobre las comparables
+      const tol = (+P.tol || 0) / 100;
+      const dentro = items.filter((i) => i.abs <= tol * Math.max(i.a, i.b)).length;
       const exactas = items.filter((i) => i.dif === 0).length;
       const soloA = items.filter((i) => i.estado === 'Solo en físico').length, soloB = items.filter((i) => i.estado === 'Solo en sistema').length;
       const orden = [...items].sort((x, y) => y.abs - x.abs);
       const top10 = suma(orden.slice(0, 10).map((i) => i.abs)), totAbs = suma(items.map((i) => i.abs));
+      const excluidas = incompletas.length + negativas.length;
       const lectura = [
-        `Por totales la confiabilidad es ${pct(confTot)} (${fmt(tA)} contra ${fmt(tB)}), pero clave por clave es ${pct(confClave)}: los sobrantes de una clave tapan los faltantes de otra cuando solo se comparan totales.`,
-        `${exactas} de ${items.length} claves (${pct(exactas / items.length)}) coinciden exacto.`,
-        `Las 10 diferencias más grandes explican el ${pct(totAbs ? top10 / totAbs : 0)} de todo el descuadre. Empieza el reconteo por ahí: ${orden.slice(0, 3).map((i) => i.clave + ' (' + (i.dif > 0 ? '+' : '') + fmt(i.dif) + ')').join(', ')}.`,
+        confTot == null ? `Por totales (${fmt(tA)} contra ${fmt(tB)}) hay un total negativo, así que no se calcula porcentaje. Clave por clave la confiabilidad es ${pct(confClave)}.` : `Por totales la confiabilidad es ${pct(confTot)} (${fmt(tA)} contra ${fmt(tB)}), pero clave por clave es ${pct(confClave)}: los sobrantes de una clave tapan los faltantes de otra cuando solo se comparan totales.`,
+        `${exactas} de ${items.length} claves comparables (${pct(exactas / items.length)}) coinciden exacto${tol ? `; ${dentro} (${pct(dentro / items.length)}) quedan dentro de ±${fmt(tol * 100)}%` : ''}. Esta es la exactitud de registro (IRA); ajusta la tolerancia según tu operación.`,
+        totAbs
+          ? `Las 10 diferencias más grandes explican el ${pct(top10 / totAbs)} de todo el descuadre. Empieza el reconteo por ahí: ${orden.filter((i) => i.abs).slice(0, 3).map((i) => i.clave + ' (' + (i.dif > 0 ? '+' : '') + fmt(i.dif) + ')').join(', ')}.`
+          : 'No hay diferencias entre las dos columnas en las claves comparables.',
       ];
       if (soloA) lectura.push(`${soloA} claves aparecen en el conteo físico pero en el sistema están en cero: posibles altas o entradas sin capturar.`);
       if (soloB) lectura.push(`${soloB} claves están en el sistema pero no se encontraron físicamente: posibles salidas sin registrar o mal ubicadas.`);
+      if (incompletas.length) lectura.push(`⚠ ${incompletas.length} claves tienen celda vacía o con error en una de las dos columnas (p. ej. ${incompletas.slice(0, 3).map((i) => i.clave).join(', ')}). No se cuentan en la confiabilidad: complétalas.`);
+      if (negativas.length) lectura.push(`⚠ ${negativas.length} claves tienen cantidades negativas (p. ej. ${negativas.slice(0, 3).map((i) => i.clave).join(', ')}). No se cuentan en la confiabilidad: una existencia negativa es un error de registro.`);
+      if (ceros || sinDato) lectura.push(`Quedaron fuera ${ceros ? ceros + ' claves en cero en las dos columnas (no hay nada que comparar)' : ''}${ceros && sinDato ? ' y ' : ''}${sinDato ? sinDato + ' claves sin dato en ninguna de las dos' : ''}.`);
       if (sinClave) lectura.push(`${sinClave} renglones sin clave (totales o subtítulos) se ignoraron.`);
       const n15 = orden.slice(0, 15);
       return {
         kpis: [
-          { l: 'Confiabilidad clave por clave', v: pct(confClave), n: 'Σ menor / Σ mayor de cada clave' },
-          { l: 'Confiabilidad por totales', v: pct(confTot), n: 'como en el Excel' },
-          { l: 'Claves exactas', v: exactas + ' / ' + items.length, n: pct(exactas / items.length) },
-          { l: 'Diferencia neta', v: (tA - tB > 0 ? '+' : '') + fmt(tA - tB), n: 'descuadre absoluto ' + fmt(totAbs) },
+          { l: 'Confiabilidad clave por clave', v: pct(confClave), n: 'Σ menor / Σ mayor, pondera por cantidad' + (excluidas ? ` · ${excluidas} claves excluidas` : '') },
+          { l: 'Confiabilidad por totales', v: confTot == null ? '—' : pct(confTot), n: confTot == null ? 'un total es negativo' : 'como en el Excel' },
+          tol ? { l: `Dentro de ±${fmt(tol * 100)}% (IRA)`, v: dentro + ' / ' + items.length, n: pct(dentro / items.length) + ' de claves comparables' } : { l: 'Claves exactas (IRA)', v: exactas + ' / ' + items.length, n: pct(exactas / items.length) + ' de claves comparables' },
+          { l: 'Diferencia neta', v: (tA - tB > 0 ? '+' : '') + fmt(tA - tB), n: 'por totales · descuadre clave por clave ' + fmt(totAbs) },
         ],
         graficas: [{ t: 'Las 15 diferencias más grandes', h: divergente(n15.map((i) => ({ l: i.clave, v: i.dif, tip: `${i.clave}${i.desc ? ' · ' + i.desc : ''}: físico ${fmt(i.a)}, sistema ${fmt(i.b)}` }))), ley: [['var(--pos)', 'Sobra en físico'], ['var(--neg)', 'Falta en físico']] }],
         lectura,
         tabla: {
           cols: [{ k: 'clave', l: P.grupo }, ...(d >= 0 ? [{ k: 'desc', l: 'Descripción', t: 'txt' }] : []), { k: 'a', l: P.a, t: 'n' }, { k: 'b', l: P.b, t: 'n' }, { k: 'dif', l: 'Diferencia', t: 'n' }, { k: 'conf', l: 'Confiabilidad', t: 'p' }, { k: 'estado', l: 'Estado', t: 'estado' }],
-          filas: orden,
+          filas: [...orden, ...incompletas, ...negativas],
         },
-        ia: { totalFisico: tA, totalSistema: tB, confTotales: confTot, confClave, exactas, claves: items.length, soloFisico: soloA, soloSistema: soloB, mayores: orden.slice(0, 20).map((i) => ({ clave: i.clave, desc: i.desc, fisico: i.a, sistema: i.b, dif: i.dif })) },
+        ia: { excluidas, tolerancia: tol, dentroTolerancia: dentro, totalFisico: tA, totalSistema: tB, confTotales: confTot, confClave, exactas, claves: items.length, soloFisico: soloA, soloSistema: soloB, mayores: orden.slice(0, 20).map((i) => ({ clave: i.clave, desc: i.desc, fisico: i.a, sistema: i.b, dif: i.dif })) },
       };
     },
   },
@@ -804,26 +884,31 @@ const ANALISIS = [
     ],
     run(P, F) {
       const f = col(P.fecha), m = P.medida ? col(P.medida) : -1, dm = P.dim ? col(P.dim) : -1;
-      const meses = new Map(), cruce = new Map(), totDim = new Map(); let ign = 0;
+      const meses = new Map(), cruce = new Map(), totDim = new Map(); let ign = 0, maxF = null;
       for (const r of F) {
         const fe = r[f]; const v = m < 0 ? 1 : r[m];
         if (!(fe instanceof Date) || typeof v !== 'number') { ign++; continue; }
+        if (!maxF || fe > maxF) maxF = fe;
         const k = mesKey(fe); meses.set(k, (meses.get(k) || 0) + v);
         if (dm >= 0) { const dv = r[dm] == null ? '(vacío)' : String(r[dm]); totDim.set(dv, (totDim.get(dv) || 0) + v); const kk = dv + '\u0000' + k; cruce.set(kk, (cruce.get(kk) || 0) + v); }
       }
       if (!meses.size) return { error: 'No hay renglones con fecha' + (m >= 0 ? ' y número en «' + P.medida + '»' : '') + '.' };
       const ks = [...meses.keys()]; const kMin = Math.min(...ks), kMax = Math.max(...ks);
       const serie = []; for (let k = kMin; k <= kMax; k++) serie.push({ k, l: mesLabel(k), v: meses.get(k) || 0 });
-      serie.forEach((s, i) => { s.mes = s.l; s.total = s.v; s.var = i && serie[i - 1].v ? s.v / serie[i - 1].v - 1 : null; });
+      // la variación % solo tiene sentido contra un mes anterior positivo
+      serie.forEach((s, i) => { s.mes = s.l; s.total = s.v; s.difAnt = i ? s.v - serie[i - 1].v : null; s.var = i && serie[i - 1].v > 0 ? s.v / serie[i - 1].v - 1 : null; });
       const unidad = m < 0 ? 'renglones' : P.medida, total = suma(serie.map((s) => s.v));
       const mejor = serie.reduce((a, b) => (b.v > a.v ? b : a)), peor = serie.reduce((a, b) => (b.v < a.v ? b : a));
       const prom = total / serie.length, ult = serie[serie.length - 1];
       const lectura = [
         `${serie.length} meses con un total de ${fmt(total)} ${unidad} y un promedio de ${fmt(prom)} por mes.`,
         `Mes más alto: ${mejor.l} (${fmt(mejor.v)}); más bajo: ${peor.l} (${fmt(peor.v)}).`,
-        `El último mes (${ult.l}) está ${ult.v >= prom ? pct(ult.v / prom - 1) + ' arriba' : pct(1 - ult.v / prom) + ' abajo'} del promedio${ult.var != null ? ' y ' + (ult.var >= 0 ? 'sube ' : 'baja ') + pct(Math.abs(ult.var)) + ' contra el mes anterior' : ''}.`,
+        prom > 0
+          ? `El último mes (${ult.l}) está ${ult.v >= prom ? pct(ult.v / prom - 1) + ' arriba' : pct(1 - ult.v / prom) + ' abajo'} del promedio${ult.var != null ? ' y ' + (ult.var >= 0 ? 'sube ' : 'baja ') + pct(Math.abs(ult.var)) + ' contra el mes anterior' : ult.difAnt != null ? ' y cambia ' + (ult.difAnt > 0 ? '+' : '') + fmt(ult.difAnt) + ' contra el mes anterior' : ''}.`
+          : `El último mes (${ult.l}) suma ${fmt(ult.v)}; el promedio no es positivo, así que no se compara en porcentaje.`,
       ];
-      const cols = [{ k: 'mes', l: 'Mes' }, { k: 'total', l: 'Total ' + unidad, t: 'n' }, { k: 'var', l: 'vs mes anterior', t: 'pv' }];
+      const avM = avisoMesFinal(maxF); if (avM) lectura.push(avM);
+      const cols = [{ k: 'mes', l: 'Mes' }, { k: 'total', l: 'Total ' + unidad, t: 'n' }, { k: 'difAnt', l: 'Cambio vs mes anterior', t: 'n' }, { k: 'var', l: '% vs mes anterior', t: 'pv' }];
       let principales = [];
       if (dm >= 0) {
         principales = [...totDim.entries()].sort((a, b) => b[1] - a[1]).slice(0, 6).map((x) => x[0]);
@@ -852,17 +937,22 @@ const ANALISIS = [
     ],
     run(P, F) {
       const g = col(P.grupo), f = col(P.fecha), d = P.desc ? col(P.desc) : -1, m = P.medida ? col(P.medida) : -1;
-      const mapa = new Map(); let maxF = null, ign = 0;
+      const corteManual = P.corte ? new Date(P.corte + 'T00:00:00') : null;
+      const mapa = new Map(); let maxF = null, ign = 0, despues = 0, ceros = 0;
       for (const r of F) {
         const k = r[g], fe = r[f]; if (k == null || !(fe instanceof Date)) { ign++; continue; }
+        // con fecha de corte, lo que pasó después no cuenta como último movimiento
+        if (corteManual && fe > corteManual) { despues++; continue; }
+        // si se eligió qué sumar, un renglón en cero no cuenta como movimiento
+        if (m >= 0 && r[m] === 0) { ceros++; continue; }
         if (!maxF || fe > maxF) maxF = fe;
         const key = String(k); let e = mapa.get(key);
         if (!e) { e = { clave: key, desc: d >= 0 ? r[d] : null, ultima: fe, primera: fe, n: 0, suma: 0 }; mapa.set(key, e); }
         if (fe > e.ultima) e.ultima = fe; if (fe < e.primera) e.primera = fe; e.n++;
         if (m >= 0 && typeof r[m] === 'number') e.suma += r[m];
       }
-      if (!mapa.size) return { error: 'No hay renglones con elemento y fecha.' };
-      const corte = P.corte ? new Date(P.corte + 'T00:00:00') : maxF;
+      if (!mapa.size) return { error: corteManual ? 'No hay movimientos en o antes de la fecha de corte.' : 'No hay renglones con elemento y fecha.' };
+      const corte = corteManual || maxF;
       const tramos = [['0–30 días', 30], ['31–60', 60], ['61–90', 90], ['91–180', 180], ['181–365', 365], ['Más de 1 año', Infinity]];
       const items = [...mapa.values()].map((e) => { e.dias = Math.round((corte - e.ultima) / DIA); e.tramo = tramos.find((t) => e.dias <= t[1])[0]; return e; }).sort((a, b) => b.dias - a.dias);
       const cuenta = tramos.map(([l]) => ({ l, v: items.filter((i) => i.tramo === l).length }));
@@ -872,6 +962,8 @@ const ANALISIS = [
         items[0] ? `El más antiguo es ${items[0].clave}${items[0].desc ? ' (' + items[0].desc + ')' : ''}: ${items[0].dias} días desde el ${fFecha(items[0].ultima)}.` : '',
         m >= 0 && mas90.length ? `Lo que lleva más de 90 días suma ${fmt(suma(mas90.map((i) => i.suma)))} en «${P.medida}».` : '',
       ].filter(Boolean);
+      if (despues) lectura.push(`${despues} movimientos posteriores a la fecha de corte no se tomaron en cuenta.`);
+      if (ceros) lectura.push(`${ceros} renglones con «${P.medida}» en cero no cuentan como movimiento.`);
       if (ign) lectura.push(`${ign} renglones sin elemento o fecha se ignoraron.`);
       return {
         kpis: [{ l: 'Elementos', v: items.length }, { l: 'Más de 90 días', v: mas90.length, n: pct(mas90.length / items.length) }, { l: 'Más de 180 días', v: items.filter((i) => i.dias > 180).length }, { l: 'Fecha de corte', v: fFecha(corte) }],
@@ -893,7 +985,7 @@ const ANALISIS = [
     ],
     run(P, F) {
       const c = col(P.cliente), f = col(P.fecha), m = P.medida ? col(P.medida) : -1, fo = P.folio ? col(P.folio) : -1;
-      const mapa = new Map(); let maxF = null, ign = 0;
+      const mapa = new Map(); let maxF = null, ign = 0, sinFolio = 0;
       for (const r of F) {
         const k = r[c], fe = r[f]; const v = m < 0 ? 1 : r[m];
         if (k == null || !(fe instanceof Date) || typeof v !== 'number') { ign++; continue; }
@@ -901,20 +993,26 @@ const ANALISIS = [
         const key = String(k); let e = mapa.get(key);
         if (!e) { e = { clave: key, ultima: fe, compras: new Set(), monto: 0 }; mapa.set(key, e); }
         if (fe > e.ultima) e.ultima = fe;
-        e.compras.add(fo >= 0 && r[fo] != null ? String(r[fo]) : +fe); e.monto += v;
+        if (fo >= 0 && r[fo] == null) sinFolio++;
+        // con folio se cuentan folios; un renglón sin folio cuenta como su día, marcado aparte para no chocar con un folio
+        e.compras.add(fo >= 0 && r[fo] != null ? 'f:' + r[fo] : 'd:' + +fe); e.monto += v;
       }
       const items = [...mapa.values()];
       if (items.length < 3) return { error: 'Se necesitan al menos 3 clientes con fecha para calificar.' };
+      const frecL = fo >= 0 ? 'Compras' : 'Días con compra';
       items.forEach((i) => { i.dias = Math.round((maxF - i.ultima) / DIA); i.freq = i.compras.size; });
-      // percentil con empates a la mitad: si todos empatan quedan en 2, no en un extremo
-      const tercil = (arr, v, inverso) => {
-        let menos = 0, igual = 0; for (const x of arr) { if (x < v) menos++; else if (x === v) igual++; }
-        const p = (menos + igual / 2) / arr.length; const n = p < 1 / 3 ? 1 : p < 2 / 3 ? 2 : 3;
-        return inverso ? 4 - n : n;
+      // percentil con empates a la mitad: si todos empatan quedan en 2, no en un extremo; se ordena una sola vez
+      const percentil = (arr) => {
+        const s = [...arr].sort((x, y) => x - y), n = s.length, cache = new Map();
+        const bajo = (v) => { let lo = 0, hi = n; while (lo < hi) { const md = (lo + hi) >> 1; if (s[md] < v) lo = md + 1; else hi = md; } return lo; };
+        const alto = (v) => { let lo = 0, hi = n; while (lo < hi) { const md = (lo + hi) >> 1; if (s[md] <= v) lo = md + 1; else hi = md; } return lo; };
+        return (v) => { if (!cache.has(v)) { const a = bajo(v), b = alto(v); cache.set(v, (a + (b - a) / 2) / n); } return cache.get(v); };
       };
+      const tercio = (p, inverso) => { const n = p < 1 / 3 ? 1 : p < 2 / 3 ? 2 : 3; return inverso ? 4 - n : n; };
       const D = items.map((i) => i.dias), Fq = items.map((i) => i.freq), M = items.map((i) => i.monto);
+      const pD = percentil(D), pF = percentil(Fq), pM = percentil(M);
       items.forEach((i) => {
-        i.R = tercil(D, i.dias, true); i.F = tercil(Fq, i.freq); i.M = tercil(M, i.monto); i.rfm = '' + i.R + i.F + i.M;
+        i.R = tercio(pD(i.dias), true); i.F = tercio(pF(i.freq)); i.M = tercio(pM(i.monto)); i.rfm = '' + i.R + i.F + i.M;
         i.seg = i.R === 3 && i.F === 3 ? 'Campeones' : i.R >= 2 && i.F >= 2 ? 'Leales' : i.R === 1 && (i.F >= 2 || i.M === 3) ? 'En riesgo' : i.R === 3 && i.F === 1 ? 'Nuevos o de una vez' : i.R === 1 ? 'Dormidos' : 'Ocasionales';
       });
       const SEG = ['Campeones', 'Leales', 'Nuevos o de una vez', 'Ocasionales', 'En riesgo', 'Dormidos'];
@@ -925,14 +1023,16 @@ const ANALISIS = [
         `Campeones y leales: ${cuenta[0].v + cuenta[1].v} clientes con ${pct((cuenta[0].m + cuenta[1].m) / tot)} del ${m < 0 ? 'número de renglones' : '«' + P.medida + '»'}.`,
         riesgo.length ? `En riesgo: ${riesgo.length} clientes que compraban seguido o fuerte y ya no. Llamar primero a ${riesgo.slice(0, 3).map((i) => i.clave).join(', ')}.` : 'No hay clientes en riesgo con estos datos.',
         `Las calificaciones son por tercios (1 = bajo, 3 = alto) y se comparan solo entre los clientes de este archivo.`,
+        fo >= 0 ? `La frecuencia cuenta folios distintos de «${P.folio}».` : 'Sin columna de folio, la frecuencia cuenta días distintos con compra (dos compras el mismo día cuentan como una). Elige el folio para contar compras.',
       ];
+      if (sinFolio) lectura.push(`⚠ ${sinFolio} renglones no tienen «${P.folio}»: se contaron por día (los de un mismo cliente y día cuentan como una compra), así que la frecuencia de esos clientes es aproximada.`);
       if (ign) lectura.push(`${ign} renglones sin cliente, fecha o número se ignoraron.`);
       return {
         kpis: [{ l: 'Clientes', v: items.length }, { l: 'Campeones', v: cuenta[0].v }, { l: 'En riesgo', v: cuenta[4].v }, { l: 'Dormidos', v: cuenta[5].v }],
         graficas: [{ t: 'Clientes por segmento', h: barrasH(cuenta, { tip: (x) => `${x.l}: ${x.v} clientes · ${pct(x.m / tot)} del monto` }) }],
         lectura,
-        tabla: { cols: [{ k: 'clave', l: P.cliente }, { k: 'ultima', l: 'Última compra', t: 'f' }, { k: 'dias', l: 'Días', t: 'n' }, { k: 'freq', l: 'Compras', t: 'n' }, { k: 'monto', l: m < 0 ? 'Renglones' : P.medida, t: 'n' }, { k: 'rfm', l: 'R·F·M' }, { k: 'seg', l: 'Segmento' }], filas: items.sort((a, b) => b.monto - a.monto) },
-        ia: { clientes: items.length, segmentos: cuenta, enRiesgo: riesgo.slice(0, 15).map((i) => ({ cliente: i.clave, dias: i.dias, compras: i.freq, monto: i.monto })) },
+        tabla: { cols: [{ k: 'clave', l: P.cliente }, { k: 'ultima', l: 'Última compra', t: 'f' }, { k: 'dias', l: 'Días', t: 'n' }, { k: 'freq', l: frecL, t: 'n' }, { k: 'monto', l: m < 0 ? 'Renglones' : P.medida, t: 'n' }, { k: 'rfm', l: 'R·F·M' }, { k: 'seg', l: 'Segmento' }], filas: items.sort((a, b) => b.monto - a.monto) },
+        ia: { clientes: items.length, frecuencia: frecL, segmentos: cuenta, enRiesgo: riesgo.slice(0, 15).map((i) => ({ cliente: i.clave, dias: i.dias, compras: i.freq, monto: i.monto })) },
       };
     },
   },
@@ -947,15 +1047,16 @@ const ANALISIS = [
         const nums = vs.filter((v) => typeof v === 'number');
         return {
           col: c.nombre, letra: letraCol(c.j), tipo: { num: 'Número', fecha: 'Fecha', texto: 'Texto' }[c.tipo],
-          llenos: vs.length, vacios: F.length - vs.length, errores: c.errores, unicos: new Set(vs.map(String)).size,
+          llenos: vs.length, vacios: F.length - vs.length - c.errores, errores: c.errores, unicos: new Set(vs.map(String)).size,
           negativos: nums.filter((v) => v < 0).length, suma: c.tipo === 'num' ? suma(nums) : null,
-          min: c.tipo === 'num' && nums.length ? Math.min(...nums) : null, max: c.tipo === 'num' && nums.length ? Math.max(...nums) : null,
+          min: c.tipo === 'num' && nums.length ? minimo(nums) : null, max: c.tipo === 'num' && nums.length ? maximo(nums) : null,
         };
       });
       const conErr = filas.filter((x) => x.errores), totErr = suma(filas.map((x) => x.errores));
       let dups = [];
       if (g >= 0) { const cnt = new Map(); F.forEach((f) => { const k = f[g]; if (k != null) cnt.set(String(k), (cnt.get(String(k)) || 0) + 1); }); dups = [...cnt.entries()].filter((x) => x[1] > 1); }
       const lectura = [`La hoja tiene ${F.length} renglones con datos y ${filas.length} columnas (encabezados en la fila ${S.datos.filaEnc + 1}).`];
+      const tot = S.datos.totales; if (tot.length) lectura.push(`Se excluyeron ${tot.length} renglones de total o subtotal (fila${tot.length > 1 ? 's' : ''} ${tot.slice(0, 6).join(', ')}${tot.length > 6 ? '…' : ''}) para que no se sumen dos veces.`);
       lectura.push(totErr ? `⚠ ${totErr} celdas con error de fórmula (#REF!, #N/A…) en ${conErr.length} columnas: ${conErr.slice(0, 5).map((x) => x.col + ' (' + x.errores + ')').join(', ')}. Se tratan como vacías.` : 'Sin celdas con error de fórmula.');
       const vacias = filas.filter((x) => !x.llenos); if (vacias.length) lectura.push(`${vacias.length} columnas tienen encabezado pero ningún dato: ${vacias.slice(0, 5).map((x) => x.col).join(', ')}.`);
       const negs = filas.filter((x) => x.negativos); if (negs.length) lectura.push(`Hay negativos en ${negs.map((x) => x.col + ' (' + x.negativos + ')').slice(0, 5).join(', ')}. Revisa si son devoluciones o errores.`);
@@ -971,19 +1072,38 @@ const ANALISIS = [
 ];
 
 // ---------- interfaz ----------
+function estado(texto, error) {
+  // va donde el usuario lo vea: en la portada o, con un archivo abierto, arriba del panel
+  const destino = $('#trabajo').hidden ? $('#carga') : $('#trabajo');
+  document.querySelectorAll('.cargando').forEach((m) => m.remove());
+  if (!texto) return;
+  const msg = document.createElement('p'); msg.className = 'cargando' + (error ? ' aviso' : ''); msg.setAttribute('role', error ? 'alert' : 'status');
+  msg.textContent = texto; destino.prepend(msg);
+}
 function cargaArchivo(file) {
-  const zona = $('#carga');
-  let msg = $('.cargando', zona); if (!msg) { msg = document.createElement('p'); msg.className = 'cargando'; zona.append(msg); }
-  msg.textContent = 'Leyendo ' + file.name + '…';
+  estado('Leyendo ' + file.name + '…');
   const lector = new FileReader();
+  lector.onerror = () => estado('No pude leer el archivo ' + file.name + '.', true);
   lector.onload = () => setTimeout(() => {
-    try { abreLibro(lector.result, file.name); $('#avisoEjemplo').hidden = true; msg.remove(); }
-    catch (e) { msg.textContent = 'No pude leer el archivo: ' + e.message; }
+    try { abreLibro(lector.result, file.name); const av = $('#avisoEjemplo'); if (av) av.hidden = true; estado(''); }
+    catch (e) { estado('No pude leer ' + file.name + ': ' + e.message, true); }
   }, 20);
   lector.readAsArrayBuffer(file);
 }
+/** un CSV se decodifica aquí (UTF-8 o, si falla, Windows-1252 como lo guarda Excel en México) y se lee como texto,
+    para que SheetJS no adivine fechas en formato de EUA ni junte claves como 001 y 1 */
+function leeLibro(buf) {
+  const b = new Uint8Array(buf);
+  const binario = (b[0] === 0x50 && b[1] === 0x4b) || (b[0] === 0xd0 && b[1] === 0xcf);
+  if (binario) return XLSX.read(buf, { type: 'array', cellDates: false, cellNF: true, cellFormula: false, cellHTML: false, cellStyles: false });
+  let texto;
+  if (b[0] === 0xff && b[1] === 0xfe) texto = new TextDecoder('utf-16le').decode(b);
+  else if (b[0] === 0xfe && b[1] === 0xff) texto = new TextDecoder('utf-16be').decode(b);
+  else try { texto = new TextDecoder('utf-8', { fatal: true }).decode(b); } catch { texto = new TextDecoder('windows-1252').decode(b); }
+  return XLSX.read(texto.replace(/^\uFEFF/, ''), { type: 'string', raw: true });
+}
 function abreLibro(buf, nombre) {
-  const libro = XLSX.read(buf, { type: 'array', cellDates: true, cellFormula: false, cellHTML: false, cellStyles: false });
+  const libro = leeLibro(buf);
   S.libro = libro; S.archivo = nombre; S.filaEnc = {};
   $('#carga').hidden = true; $('#trabajo').hidden = false; $('#nomArchivo').textContent = nombre;
   const util = libro.SheetNames.map((n) => { const ws = libro.Sheets[n]; const r = ws['!ref'] ? XLSX.utils.decode_range(ws['!ref']) : null; return { n, filas: r ? r.e.r + 1 : 0 }; }).filter((h) => h.filas > 1);
@@ -993,11 +1113,13 @@ function abreLibro(buf, nombre) {
 }
 function eligeHoja(nombre, filaEnc) {
   S.hoja = nombre;
-  S.datos = leeHoja(S.libro.Sheets[nombre], filaEnc);
+  if (filaEnc != null) S.filaEnc[nombre] = filaEnc;
+  S.datos = leeHoja(S.libro.Sheets[nombre], S.filaEnc[nombre]);
   S.params = {};
   document.querySelectorAll('#hojas .chip').forEach((b) => b.setAttribute('aria-pressed', b.dataset.hoja === nombre));
   const tipos = { num: 0, fecha: 0, texto: 0 }; S.datos.cols.forEach((c) => tipos[c.tipo]++);
-  $('#encab').innerHTML = `<span>${fmt(S.datos.filas.length)} renglones · ${S.datos.cols.length} columnas (${tipos.num} numéricas, ${tipos.fecha} de fecha)</span>
+  const nt = S.datos.totales.length;
+  $('#encab').innerHTML = `<span>${fmt(S.datos.filas.length)} renglones · ${S.datos.cols.length} columnas (${tipos.num} numéricas, ${tipos.fecha} de fecha)${nt ? ` · ${nt} renglón${nt > 1 ? 'es' : ''} de total excluido${nt > 1 ? 's' : ''}` : ''}</span>
     <span>· Encabezados en la fila <input type="number" min="1" id="filaEnc" value="${S.datos.filaEnc + 1}"></span>`;
   pintaAnalisis();
   // si la hoja no tiene fechas, no tiene caso abrir en un análisis que las pide
@@ -1036,7 +1158,7 @@ function eligeAnalisis(id) {
   const recordado = (lee('mecha-analisis:campos') || {})[firma() + '#' + id] || {};
   const P = {}; const usados = new Set();
   for (const c of def.campos) {
-    if (['pct', 'dec', 'date'].includes(c.tipo)) { P[c.id] = recordado[c.id] ?? c.def ?? ''; continue; }
+    if (['pct', 'pct0', 'dec', 'date'].includes(c.tipo)) { P[c.id] = recordado[c.id] ?? c.def ?? ''; continue; }
     const valido = recordado[c.id] !== undefined && (recordado[c.id] === '' ? c.opc : opciones(c).some((o) => o.nombre === recordado[c.id]));
     P[c.id] = valido ? recordado[c.id] : adivina(c, usados);
     if (P[c.id]) usados.add(P[c.id]);
@@ -1050,7 +1172,7 @@ function eligeAnalisis(id) {
   S.params = P;
   $('#params').innerHTML = `<p class="desc-an">${esc(def.desc)}</p>` + def.campos.map((c) => {
     const ayuda = c.ayuda ? ` <i>· ${esc(c.ayuda)}</i>` : c.opc ? ' <i>· opcional</i>' : '';
-    if (c.tipo === 'pct' || c.tipo === 'dec') return `<div class="campo corto"><label for="p_${c.id}">${esc(c.label)}</label><input id="p_${c.id}" data-p="${c.id}" type="number" step="${c.tipo === 'pct' ? 1 : 0.1}" min="0" ${c.tipo === 'pct' ? 'max="100"' : ''} value="${esc(P[c.id])}"></div>`;
+    if (c.tipo === 'pct' || c.tipo === 'pct0' || c.tipo === 'dec') return `<div class="campo corto"><label for="p_${c.id}">${esc(c.label)}</label><input id="p_${c.id}" data-p="${c.id}" type="number" step="${c.tipo === 'dec' ? 0.1 : 1}" min="0" ${c.tipo !== 'dec' ? 'max="100"' : ''} value="${esc(P[c.id])}"></div>`;
     if (c.tipo === 'date') return `<div class="campo"><label for="p_${c.id}">${esc(c.label)}${ayuda}</label><input id="p_${c.id}" data-p="${c.id}" type="date" value="${esc(P[c.id])}"></div>`;
     const ops = opciones(c);
     return `<div class="campo"><label for="p_${c.id}">${esc(c.label)}${ayuda}</label><select id="p_${c.id}" data-p="${c.id}">
@@ -1062,9 +1184,12 @@ function eligeAnalisis(id) {
 function corre() {
   const def = ANALISIS.find((a) => a.id === S.an);
   const P = S.params; const out = $('#resultado');
-  const falta = def.campos.filter((c) => !c.opc && !['pct', 'dec', 'date'].includes(c.tipo) && !P[c.id]);
-  if (falta.length) { S.res = null; out.innerHTML = `<p class="vacio">Esta hoja no tiene columna para «${falta.map((c) => c.label).join('», «')}». Prueba otra hoja o ajusta la fila de encabezados.</p>`; return; }
-  if (P.cA != null && +P.cA >= +P.cB) { out.innerHTML = '<p class="aviso">El corte A debe ser menor que el corte B.</p>'; return; }
+  const falta = def.campos.filter((c) => !c.opc && !['pct', 'pct0', 'dec', 'date'].includes(c.tipo) && !P[c.id]);
+  if (falta.length) { S.res = null; S.refrescaTabla = null; out.innerHTML = `<p class="vacio">Esta hoja no tiene columna para «${falta.map((c) => c.label).join('», «')}». Prueba otra hoja o ajusta la fila de encabezados.</p>`; return; }
+  const malo = (v) => v === '' || v == null || !isFinite(+v);
+  if (P.cA !== undefined && (malo(P.cA) || malo(P.cB) || +P.cA <= 0 || +P.cB > 100 || +P.cA >= +P.cB)) { S.res = null; S.refrescaTabla = null; out.innerHTML = '<p class="aviso">Los cortes deben cumplir 0 &lt; A &lt; B ≤ 100.</p>'; return; }
+  if (P.tol !== undefined && (malo(P.tol) || +P.tol < 0 || +P.tol > 100)) { S.res = null; S.refrescaTabla = null; out.innerHTML = '<p class="aviso">La tolerancia va de 0 a 100%.</p>'; return; }
+  if (P.cX !== undefined && (malo(P.cX) || malo(P.cY) || +P.cX < 0 || +P.cX >= +P.cY)) { S.res = null; S.refrescaTabla = null; out.innerHTML = '<p class="aviso">Los cortes deben cumplir 0 ≤ X &lt; Y.</p>'; return; }
   const t0 = performance.now();
   let res;
   try { res = def.run({ ...P, cA: +P.cA, cB: +P.cB, cX: +P.cX, cY: +P.cY }, S.datos.filas); }
@@ -1086,6 +1211,7 @@ function celda(v, t) {
   return `<td>${esc(v instanceof Date ? fFecha(v) : v)}</td>`;
 }
 const LIMITE = 400;
+let imprimiendo = false;
 function pintaTabla(tabla, filtro = '', orden = null) {
   let filas = tabla.filas;
   if (filtro) { const q = norm(filtro); filas = filas.filter((f) => tabla.cols.some((c) => f[c.k] != null && norm(f[c.k] instanceof Date ? fFecha(f[c.k]) : f[c.k]).includes(q))); }
@@ -1094,11 +1220,11 @@ function pintaTabla(tabla, filtro = '', orden = null) {
     filas = [...filas].sort((a, b) => { const x = a[k], y = b[k]; if (x == null) return 1; if (y == null) return -1; return (x > y ? 1 : x < y ? -1 : 0) * dir; });
   }
   const cab = tabla.cols.map((c) => `<th class="${['n', 'p', 'pv'].includes(c.t) ? 'n' : ''}" data-k="${c.k}" ${orden && orden.k === c.k ? `data-orden="${orden.dir > 0 ? '▲' : '▼'}"` : ''}>${esc(c.l)}</th>`).join('');
-  const cuerpo = filas.slice(0, LIMITE).map((f) => '<tr>' + tabla.cols.map((c) => celda(f[c.k], c.t)).join('') + '</tr>').join('');
+  const cuerpo = (imprimiendo ? filas : filas.slice(0, LIMITE)).map((f) => '<tr>' + tabla.cols.map((c) => celda(f[c.k], c.t)).join('') + '</tr>').join('');
   return { html: `<div class="tabla-wrap"><table><thead><tr>${cab}</tr></thead><tbody>${cuerpo}</tbody></table></div>`, n: filas.length };
 }
 function pintaResultado(def, res) {
-  const out = $('#resultado');
+  const out = $('#resultado'); S.refrescaTabla = null;
   if (res.error) { out.innerHTML = `<p class="aviso">${esc(res.error)}</p>`; return; }
   const kpis = `<div class="kpis">${res.kpis.map((k) => `<div class="kpi"><div class="k-l">${esc(k.l)}</div><div class="k-v">${esc(k.v)}</div>${k.n ? `<div class="k-n">${esc(k.n)}</div>` : ''}</div>`).join('')}</div>`;
   const graf = res.graficas && res.graficas.length ? `<div class="graficas">${res.graficas.map((g) => `<div class="bloque grafica"><h3>${esc(g.t)}</h3>${g.h}${g.ley ? `<div class="leyenda">${g.ley.map(([c, l]) => `<span><i style="background:${c}"></i>${esc(l)}</span>`).join('')}</div>` : ''}</div>`).join('')}</div>` : '';
@@ -1121,6 +1247,7 @@ function pintaResultado(def, res) {
   });
   $('#xls').addEventListener('click', () => exporta(def, res));
   $('#imprime').addEventListener('click', () => window.print());
+  S.refrescaTabla = refresca;
   conectaIA(def, res);
   const pg = res.graficas && res.graficas.find((g) => g.pareto);
   if (pg) conectaPareto(pg.pareto);
@@ -1144,11 +1271,13 @@ function conectaPareto(items) {
 function exporta(def, res) {
   const wb = XLSX.utils.book_new();
   const cab = res.tabla.cols.map((c) => c.l);
-  const filas = res.tabla.filas.map((f) => res.tabla.cols.map((c) => { const v = f[c.k]; return v == null ? '' : v; }));
-  const ws = XLSX.utils.aoa_to_sheet([cab, ...filas], { cellDates: true });
+  // fechas como número de serie desde sus componentes locales: así Excel no les resta un día por la zona horaria
+  const serial = (d) => (Date.UTC(d.getFullYear(), d.getMonth(), d.getDate()) - Date.UTC(1899, 11, 30)) / DIA;
+  const filas = res.tabla.filas.map((f) => res.tabla.cols.map((c) => { const v = f[c.k]; return v == null ? '' : v instanceof Date ? serial(v) : v; }));
+  const ws = XLSX.utils.aoa_to_sheet([cab, ...filas]);
   ws['!cols'] = res.tabla.cols.map((c) => ({ wch: c.t === 'txt' ? 42 : Math.min(30, Math.max(10, c.l.length + 2)) }));
   res.tabla.cols.forEach((c, j) => {
-    const z = c.t === 'p' || c.t === 'pv' ? '0.0%' : c.t === 'n' ? '#,##0.##' : c.t === 'f' ? 'dd/mm/yyyy' : null;
+    const z = c.t === 'p' || c.t === 'pv' ? '0.0%' : c.t === 'n' ? '#,##0.00' : c.t === 'f' ? 'dd/mm/yyyy' : null;
     if (!z) return;
     for (let i = 1; i <= filas.length; i++) { const cell = ws[XLSX.utils.encode_cell({ r: i, c: j })]; if (cell && cell.t !== 's') cell.z = z; }
   });
@@ -1205,16 +1334,28 @@ function conectaIA(def, res) {
   const arma = () => {
     const anon = $('#iaAnon').checked;
     const base = { analisis: def.nombre, explicacion: def.desc, parametros: S.params, indicadores: res.kpis, resultado: res.ia };
-    const { datos, mapa } = anon ? anonimiza(base) : { datos: base, mapa: null };
-    if (anon) datos.parametros = Object.fromEntries(Object.keys(S.params).map((k) => [k, typeof S.params[k] === 'number' ? S.params[k] : '(columna)']));
-    if (anon) datos.indicadores = res.kpis.map((k) => ({ l: k.l.replace(/«.*?»/g, ''), v: k.v }));
+    if (!anon) return { datos: base, mapa: null };
+    // los nombres de columna también son del archivo: se cambian por «columna 1», «columna 2»…
+    const nombres = S.datos.cols.map((c) => c.nombre).sort((a, b) => b.length - a.length);
+    const alias = new Map(S.datos.cols.map((c, i) => [c.nombre, 'columna ' + (i + 1)]));
+    // solo palabras completas: la columna «Cliente» no debe tapar la palabra «Clientes»
+    const rx = nombres.map((n) => [new RegExp('(?<![\\p{L}\\p{N}])' + n.replace(/[.*+?^${}()|[\]\\]/g, '\\$&') + '(?![\\p{L}\\p{N}])', 'gu'), alias.get(n)]);
+    const tapa = (t) => { let x = String(t); for (const [r, al] of rx) x = x.replace(r, al); return x; };
+    const IDENT = new Set(['clave', 'desc', 'cliente']);
+    // los valores de identidad no se tapan aquí: anonimiza() los cambia completos por «Elemento N»
+    const rec = (o) => (Array.isArray(o) ? o.map(rec) : o && typeof o === 'object' ? Object.fromEntries(Object.entries(o).map(([k, v]) => [k, IDENT.has(k) ? v : rec(v)])) : typeof o === 'string' ? tapa(o) : o);
+    const { datos, mapa } = anonimiza({ ...base, resultado: rec(base.resultado) });
+    datos.parametros = Object.fromEntries(Object.entries(S.params).map(([k, v]) => [k, alias.has(v) ? alias.get(v) : isFinite(+v) && v !== '' ? +v : '']));
+    datos.indicadores = res.kpis.map((k) => ({ l: tapa(k.l), v: tapa(k.v) }));
     return { datos, mapa };
   };
   const refresca = () => { $('#iaPayload').textContent = JSON.stringify(arma().datos, null, 1); };
   refresca();
   ['iaAnon'].forEach((id) => $('#' + id).addEventListener('change', refresca));
-  $('#iaProv').addEventListener('change', () => { $('#iaModelo').value = PROVEEDORES[$('#iaProv').value].modelo; });
-  const k = sessionStorage.getItem('mecha-analisis:key:' + $('#iaProv').value); if (k) $('#iaKey').value = k;
+  // cada proveedor con su propia clave: nunca mandar a uno la clave de otro
+  const cargaClave = () => { let k = ''; try { k = sessionStorage.getItem('mecha-analisis:key:' + $('#iaProv').value) || ''; } catch { /* nada */ } $('#iaKey').value = k; };
+  $('#iaProv').addEventListener('change', () => { $('#iaModelo').value = PROVEEDORES[$('#iaProv').value].modelo; cargaClave(); });
+  cargaClave();
   $('#iaEnviar').addEventListener('click', async () => {
     const prov = $('#iaProv').value, modelo = $('#iaModelo').value.trim(), key = $('#iaKey').value.trim(), resp = $('#iaResp');
     if (!key) { resp.innerHTML = '<p class="aviso">Falta la clave de API.</p>'; return; }
@@ -1312,6 +1453,11 @@ function libroDeEjemplo() {
 // ---------- eventos ----------
 $('#ejemplo').addEventListener('click', () => { abreLibro(libroDeEjemplo(), 'Datos de ejemplo (ficticios).xlsx'); $('#avisoEjemplo').hidden = false; });
 const zona = $('#zona'), input = $('#archivo');
+// la zona de carga también funciona con teclado
+zona.addEventListener('keydown', (e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); input.click(); } });
+// al imprimir van todos los renglones, no solo los primeros 400
+addEventListener('beforeprint', () => { imprimiendo = true; if (S.refrescaTabla) S.refrescaTabla(); });
+addEventListener('afterprint', () => { imprimiendo = false; if (S.refrescaTabla) S.refrescaTabla(); });
 input.addEventListener('change', () => { if (input.files[0]) cargaArchivo(input.files[0]); });
 ['dragenter', 'dragover'].forEach((ev) => zona.addEventListener(ev, (e) => { e.preventDefault(); zona.classList.add('sobre'); }));
 ['dragleave', 'drop'].forEach((ev) => zona.addEventListener(ev, (e) => { e.preventDefault(); zona.classList.remove('sobre'); }));
