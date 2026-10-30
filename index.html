@@ -133,6 +133,8 @@ main { padding: clamp(16px, 3vw, 32px) clamp(16px, 4vw, 40px) 64px; max-width: 1
 .an span { font-size: 11.5px; color: var(--tinta-2); line-height: 1.35; }
 .an[aria-pressed="true"] { border-color: var(--azul); box-shadow: inset 0 0 0 1px var(--azul); background: var(--sup-2); }
 .an[aria-pressed="true"] b { color: var(--azul); }
+.an.sin { opacity: .55; border-style: dashed; }
+.an.sin[aria-pressed="true"] { opacity: .8; }
 
 .panel { background: var(--sup); border: 1px solid var(--borde); border-radius: 14px; box-shadow: var(--sombra); overflow: hidden; }
 .params { display: flex; flex-wrap: wrap; gap: 12px 16px; padding: 16px; border-bottom: 1px solid var(--borde); background: var(--sup-2); align-items: flex-end; }
@@ -146,7 +148,8 @@ main { padding: clamp(16px, 3vw, 32px) clamp(16px, 4vw, 40px) 64px; max-width: 1
 .campo.corto { flex: 0 1 110px; min-width: 90px; }
 .desc-an { flex-basis: 100%; margin: 0; font-size: 12.5px; color: var(--tinta-2); }
 
-.resultado { padding: 18px 16px 22px; display: grid; gap: 20px; }
+.resultado { padding: 18px 16px 22px; display: grid; grid-template-columns: minmax(0, 1fr); gap: 20px; }
+.resultado > *, .bloque { min-width: 0; }
 .vacio { color: var(--tinta-2); padding: 24px 4px; text-align: center; }
 .aviso { border-left: 3px solid var(--alerta); background: var(--sup-2); padding: 10px 12px; border-radius: 0 8px 8px 0; font-size: 13px; }
 
@@ -172,7 +175,10 @@ main { padding: clamp(16px, 3vw, 32px) clamp(16px, 4vw, 40px) 64px; max-width: 1
 /* tabla */
 .tabla-top { display: flex; justify-content: space-between; align-items: center; gap: 10px; flex-wrap: wrap; margin-bottom: 8px; }
 .tabla-top input { padding: 6px 10px; border: 1px solid var(--borde); border-radius: 8px; background: var(--sup); min-width: 200px; flex: 0 1 260px; }
-.tabla-wrap { overflow: auto; max-height: 560px; border: 1px solid var(--borde); border-radius: 10px; }
+.tabla-wrap { overflow: auto; max-height: 560px; max-width: 100%; border: 1px solid var(--borde); border-radius: 10px; -webkit-overflow-scrolling: touch; scrollbar-gutter: stable; }
+.tabla-wrap::-webkit-scrollbar { height: 10px; width: 10px; }
+.tabla-wrap::-webkit-scrollbar-thumb { background: var(--tinta-3); border-radius: 6px; border: 2px solid var(--sup); }
+.tabla-wrap::-webkit-scrollbar-track { background: var(--sup-2); }
 table { border-collapse: collapse; width: 100%; font-size: 12.5px; }
 th, td { padding: 6px 10px; border-bottom: 1px solid var(--rejilla); white-space: nowrap; text-align: left; }
 td.n, th.n { text-align: right; }
@@ -182,6 +188,24 @@ thead th:hover { color: var(--azul); }
 thead th[data-orden]::after { content: attr(data-orden); margin-left: 4px; color: var(--azul); }
 tbody tr:hover { background: var(--sup-2); }
 .nota-tabla { font-size: 12px; color: var(--tinta-3); margin-top: 6px; }
+
+/* clic para ver lo que hay detrás */
+.clic { cursor: pointer; }
+.grafica rect.clic:hover { opacity: .8; }
+.grafica rect.clic[fill="transparent"]:hover { opacity: 1; fill: var(--rejilla); fill-opacity: .5; }
+.kpi.clic { transition: border-color .15s; }
+.kpi.clic:hover, .kpi.clic:focus-visible { border-color: var(--azul); outline: none; }
+.kpi.clic .k-l::after { content: ' ›'; color: var(--azul); }
+tbody tr.clic:hover td { color: var(--azul); }
+tbody tr.clic:focus-visible { outline: 2px solid var(--azul); outline-offset: -2px; }
+.pista { margin: 0; font-size: 12.5px; color: var(--tinta-2); }
+.migas { display: flex; align-items: center; gap: 6px; flex-wrap: wrap; font-size: 13px; margin: -2px 0 8px; padding: 8px 10px; background: var(--sup-2); border-radius: 8px; }
+.migas span { color: var(--tinta-3); }
+.migas b { color: var(--azul); }
+.sin-datos { border: 1px dashed var(--borde); border-radius: 12px; padding: 18px 20px; font-size: 13.5px; }
+.sin-datos > b { font-size: 15px; }
+.sin-datos p { margin: 8px 0 0; color: var(--tinta-2); }
+@media print { .pista, .migas { display: none !important; } }
 .clase { display: inline-block; min-width: 24px; text-align: center; padding: 1px 6px; border-radius: 6px; font-weight: 700; font-size: 11.5px; }
 .clase.c1 { background: var(--s1); color: #fff; }
 .clase.c2 { background: var(--s2); color: #fff; }
@@ -567,8 +591,9 @@ function barrasH(datos, { colorDe, etiqueta = (d) => fmt(d.v), tip } = {}) {
     const y = T + i * fila, bw = Math.max(d.v ? 3 : 0, (Math.abs(d.v) / max) * w);
     const nom = d.l.length > 22 ? d.l.slice(0, 21) + '…' : d.l;
     s += `<text x="${L - 8}" y="${y + 18}" text-anchor="end">${esc(nom)}</text>`;
-    s += `<rect x="${L}" y="${y + 6}" width="${bw}" height="18" rx="4" fill="${colorDe ? colorDe(d, i) : 'var(--azul)'}" data-tip="${esc(tip ? tip(d) : d.l + ': ' + fmt(d.v))}"/>`;
+    s += `<rect x="${L}" y="${y + 6}" width="${bw}" height="18" rx="4" fill="${colorDe ? colorDe(d, i) : 'var(--azul)'}" data-tip="${esc((tip ? tip(d) : d.l + ': ' + fmt(d.v)) + (d.f != null ? ' · clic para ver la lista' : ''))}"${d.f != null ? ` data-f="${d.f}" class="clic"` : ''}/>`;
     s += `<text x="${L + bw + 6}" y="${y + 19}" class="ttl">${esc(etiqueta(d))}</text>`;
+    if (d.f != null && d.v) s += `<rect x="0" y="${y}" width="${W}" height="${fila}" fill="transparent" class="clic" data-f="${d.f}" data-tip="${esc((tip ? tip(d) : d.l + ': ' + fmt(d.v)) + ' · clic para ver la lista')}"/>`;
   });
   return svg(H, s, 'Barras');
 }
@@ -587,7 +612,7 @@ function barrasV(datos, { tip } = {}) {
   const cada = Math.ceil(n / 12);
   datos.forEach((d, i) => {
     const cx = L + banda * i + banda / 2, y0 = y(0), y1 = y(d.v);
-    s += `<rect x="${cx - bw / 2}" y="${Math.min(y0, y1)}" width="${bw}" height="${Math.max(1, Math.abs(y1 - y0))}" rx="${Math.min(4, bw / 3)}" fill="var(--azul)" data-tip="${esc(tip ? tip(d) : d.l + ': ' + fmt(d.v))}"/>`;
+    s += `<rect x="${cx - bw / 2}" y="${Math.min(y0, y1)}" width="${bw}" height="${Math.max(1, Math.abs(y1 - y0))}" rx="${Math.min(4, bw / 3)}" fill="var(--azul)" data-tip="${esc((tip ? tip(d) : d.l + ': ' + fmt(d.v)) + (d.f != null ? ' · clic para ver la lista' : ''))}"${d.f != null ? ` data-f="${d.f}" class="clic"` : ''}/>`;
     if (i % cada === 0) s += `<text x="${cx}" y="${T + h + 18}" text-anchor="middle">${esc(d.l)}</text>`;
   });
   return svg(H, s, 'Barras por periodo');
@@ -602,28 +627,48 @@ function divergente(datos) {
     const y = T + i * fila, bw = Math.max(2, (Math.abs(d.v) / max) * (w / 2 - 50));
     const x0 = d.v >= 0 ? cx : cx - bw;
     s += `<text x="${L - 8}" y="${y + 17}" text-anchor="end">${esc(d.l.length > 16 ? d.l.slice(0, 15) + '…' : d.l)}</text>`;
-    s += `<rect x="${x0}" y="${y + 5}" width="${bw}" height="16" rx="4" fill="${d.v >= 0 ? 'var(--pos)' : 'var(--neg)'}" data-tip="${esc(d.tip || d.l + ': ' + fmt(d.v))}"/>`;
+    s += `<rect x="${x0}" y="${y + 5}" width="${bw}" height="16" rx="4" fill="${d.v >= 0 ? 'var(--pos)' : 'var(--neg)'}" data-tip="${esc((d.tip || d.l + ': ' + fmt(d.v)) + (d.f != null ? ' · clic para ver la lista' : ''))}"${d.f != null ? ` data-f="${d.f}" class="clic"` : ''}/>`;
     s += `<text x="${d.v >= 0 ? cx + bw + 5 : cx - bw - 5}" y="${y + 17}" text-anchor="${d.v >= 0 ? 'start' : 'end'}" class="ttl">${(d.v > 0 ? '+' : '') + fmt(d.v)}</text>`;
   });
   return svg(H, s, 'Diferencias por clave');
 }
 
 /** matriz 3×3 (ABC × XYZ) con intensidad por número de elementos */
-function matriz(m, filas, cols, total) {
+function matriz(m, filas, cols, total, fDe) {
   const cw = 150, chh = 62, L = 110, T = 26, H = T + chh * 3 + 6;
   let s = '';
   cols.forEach((c, k) => { s += `<text x="${L + cw * k + cw / 2}" y="${T - 10}" text-anchor="middle" class="ttl">${c.l}</text>`; });
   filas.forEach((f, i) => {
     s += `<text x="${L - 10}" y="${T + chh * i + chh / 2 + 4}" text-anchor="end" class="ttl">${f.l}</text>`;
     cols.forEach((c, k) => {
-      const v = m[f.k + c.k] || 0, o = total ? 0.08 + 0.85 * (v / Math.max(...Object.values(m), 1)) : 0;
-      s += `<rect x="${L + cw * k + 2}" y="${T + chh * i + 2}" width="${cw - 4}" height="${chh - 4}" rx="8" fill="var(--azul)" fill-opacity="${o.toFixed(2)}" stroke="var(--borde)" data-tip="${esc(f.k + c.k + ': ' + v + ' elementos — ' + (f.d || '') + ' / ' + (c.d || ''))}"/>`;
+      const v = m[f.k + c.k] || 0, fi = v && fDe ? fDe(f.k + c.k) : null, o = total ? 0.08 + 0.85 * (v / Math.max(...Object.values(m), 1)) : 0;
+      s += `<rect x="${L + cw * k + 2}" y="${T + chh * i + 2}" width="${cw - 4}" height="${chh - 4}" rx="8" fill="var(--azul)" fill-opacity="${o.toFixed(2)}" stroke="var(--borde)" data-tip="${esc(f.k + c.k + ': ' + v + ' elementos — ' + (f.d || '') + ' / ' + (c.d || '') + (fi != null ? ' · clic para ver la lista' : ''))}"${fi != null ? ` data-f="${fi}" class="clic"` : ''}/>`;
       s += `<text x="${L + cw * k + cw / 2}" y="${T + chh * i + chh / 2 + 1}" text-anchor="middle" style="font-size:17px;font-weight:700;fill:${o > 0.5 ? '#fff' : 'var(--tinta)'}">${v}</text>`;
       s += `<text x="${L + cw * k + cw / 2}" y="${T + chh * i + chh / 2 + 17}" text-anchor="middle" style="fill:${o > 0.5 ? '#fff' : 'var(--tinta-2)'}">${f.k + c.k}</text>`;
     });
   });
   return `<svg viewBox="0 0 ${L + cw * 3 + 10} ${H}" role="img" aria-label="Matriz ABC-XYZ">${s}</svg>`;
 }
+
+// ---------- desglose al hacer clic ----------
+const claveDe = (v) => (v instanceof Date ? fFecha(v) : String(v));
+/** vista con los renglones originales de la hoja que cumplen una condición (con su fila de Excel) */
+function crudo(l, pred) {
+  return {
+    l, crudo: true,
+    tabla: () => {
+      const cols = [{ k: '_fila', l: 'Fila' }, ...S.datos.cols.map((c) => ({ k: 'c' + c.j, l: c.nombre, t: c.tipo === 'num' ? 'n' : c.tipo === 'fecha' ? 'f' : undefined }))];
+      const filas = [];
+      S.datos.filas.forEach((r, i) => {
+        if (!pred(r)) return;
+        const o = { _fila: S.datos.numFila[i] }; S.datos.cols.forEach((c) => { o['c' + c.j] = r[c.j]; }); filas.push(o);
+      });
+      return { cols, filas };
+    },
+  };
+}
+/** renglones originales de un elemento (producto, cliente…) */
+const crudoDe = (j, nombreCol) => (fila) => (fila.clave == null ? null : crudo(`${nombreCol} ${fila.clave}`, (r) => r[j] != null && claveDe(r[j]) === fila.clave));
 
 // ---------- análisis ----------
 const R = {
@@ -646,7 +691,7 @@ function agrupa(filas, g, m, fx, d) {
     let v = m < 0 ? 1 : r[m];
     if (typeof v !== 'number') { noNum++; continue; }
     if (fx >= 0) { const f = r[fx]; if (typeof f !== 'number') { noNum++; continue; } v *= f; }
-    const key = k instanceof Date ? fFecha(k) : String(k);
+    const key = claveDe(k);
     let e = mapa.get(key);
     if (!e) { e = { clave: key, desc: d >= 0 ? r[d] : null, valor: 0, n: 0 }; mapa.set(key, e); }
     e.valor += v; e.n++; if (e.desc == null && d >= 0) e.desc = r[d];
@@ -688,6 +733,7 @@ const ANALISIS = [
       const unidad = fx >= 0 ? `${P.medida} × ${P.factor}` : P.medida;
       const porClase = ['A', 'B', 'C'].map((c) => { const xs = pos.filter((i) => i.clase === c); return { c, n: xs.length, v: suma(xs.map((i) => i.valor)) }; });
       const [A, B, C] = porClase;
+      const fl = porClase.map((x) => ({ l: 'Clase ' + x.c, fn: (i) => i.clase === x.c }));
       const lectura = [
         `${A.n} de ${pos.length} elementos (${pct(A.n / pos.length)}) concentran el ${pct(A.v / total)} de «${unidad}». Son la clase A: nunca deben faltar y conviene revisarlos más seguido.`,
         `La clase C son ${C.n} elementos (${pct(C.n / pos.length)}) que suman apenas el ${pct(C.v / total)}. Candidatos a surtir bajo pedido, liquidar o revisar si vale la pena tenerlos.`,
@@ -703,11 +749,11 @@ const ANALISIS = [
         kpis: [
           { l: 'Suma de «' + unidad + '»', v: fmt(total) },
           { l: 'Elementos con valor', v: fmt(pos.length), n: cero.length ? cero.length + ' en cero' : '' },
-          ...porClase.map((x) => ({ l: 'Clase ' + x.c, v: fmt(x.n), n: pct(x.n / pos.length) + ' de elementos · ' + pct(x.v / total) + ' del total' })),
+          ...porClase.map((x, k) => ({ l: 'Clase ' + x.c, v: fmt(x.n), n: pct(x.n / pos.length) + ' de elementos · ' + pct(x.v / total) + ' del total', f: k })),
         ],
         graficas: [
           { t: 'Curva de Pareto', h: graficaPareto(pos, [cA, cB]), ley: [['var(--s1)', 'A'], ['var(--s2)', 'B'], ['var(--s3)', 'C']], pareto: pos },
-          { t: 'Peso de cada clase en el total', h: barrasH(porClase.map((x, k) => ({ l: 'Clase ' + x.c + ' · ' + x.n, v: x.v, k })), { colorDe: (x) => `var(--s${x.k + 1})`, etiqueta: (x) => pct(x.v / total) }) },
+          { t: 'Peso de cada clase en el total', h: barrasH(porClase.map((x, k) => ({ l: 'Clase ' + x.c + ' · ' + x.n, v: x.v, k, f: k })), { colorDe: (x) => `var(--s${x.k + 1})`, etiqueta: (x) => pct(x.v / total) }) },
         ],
         lectura,
         tabla: {
@@ -718,6 +764,7 @@ const ANALISIS = [
           ],
           filas,
         },
+        filtros: fl, drill: crudoDe(g, P.grupo),
         ia: { total, elementos: pos.length, clases: porClase, top: pos.slice(0, 25).map((i) => ({ clave: i.clave, desc: i.desc, valor: i.valor, acum: i.acum, clase: i.clase })), negativos: neg.length, enCero: cero.length },
       };
     },
@@ -741,7 +788,7 @@ const ANALISIS = [
         if (k == null || !(fe instanceof Date) || typeof v !== 'number') { ign++; continue; }
         if (!maxF || fe > maxF) maxF = fe;
         const mk = mesKey(fe); kMin = Math.min(kMin, mk); kMax = Math.max(kMax, mk);
-        const key = String(k); let e = mapa.get(key);
+        const key = claveDe(k); let e = mapa.get(key);
         if (!e) { e = { clave: key, desc: d >= 0 ? r[d] : null, meses: new Map(), valor: 0 }; mapa.set(key, e); }
         e.meses.set(mk, (e.meses.get(mk) || 0) + v); e.valor += v;
       }
@@ -761,6 +808,7 @@ const ANALISIS = [
       const m3 = {}; items.forEach((i) => { if (i.combo !== '—') m3[i.combo] = (m3[i.combo] || 0) + 1; });
       const val = items.filter((i) => i.combo !== '—');
       const cuenta = (c) => val.filter((i) => i.xyz === c).length;
+      const fl = [], ver = (l, fn) => fl.push({ l, fn }) - 1;
       const lectura = [
         `Se analizaron ${nMeses} meses (${mesLabel(kMin)} a ${mesLabel(kMax)}) y ${val.length} elementos con movimiento positivo.`,
         `${cuenta('X')} estables (X), ${cuenta('Y')} variables (Y) y ${cuenta('Z')} erráticos (Z).`,
@@ -778,14 +826,15 @@ const ANALISIS = [
       return {
         kpis: [
           { l: 'Meses analizados', v: nMeses, n: mesLabel(kMin) + ' – ' + mesLabel(kMax) },
-          { l: 'Estables (X)', v: cuenta('X') }, { l: 'Variables (Y)', v: cuenta('Y') }, { l: 'Erráticos (Z)', v: cuenta('Z') },
+          { l: 'Estables (X)', v: cuenta('X'), f: ver('Estables (X)', (i) => i.xyz === 'X') }, { l: 'Variables (Y)', v: cuenta('Y'), f: ver('Variables (Y)', (i) => i.xyz === 'Y') }, { l: 'Erráticos (Z)', v: cuenta('Z'), f: ver('Erráticos (Z)', (i) => i.xyz === 'Z') },
         ],
-        graficas: [{ t: 'Matriz ABC × XYZ (número de elementos)', h: matriz(m3, ['A', 'B', 'C'].map((k) => ({ k, l: k + ' · ' + L[k], d: L[k] })), ['X', 'Y', 'Z'].map((k) => ({ k, l: k + ' · ' + L[k], d: 'demanda ' + L[k] })), val.length) }],
+        graficas: [{ t: 'Matriz ABC × XYZ (número de elementos)', h: matriz(m3, ['A', 'B', 'C'].map((k) => ({ k, l: k + ' · ' + L[k], d: L[k] })), ['X', 'Y', 'Z'].map((k) => ({ k, l: k + ' · ' + L[k], d: 'demanda ' + L[k] })), val.length, (cb) => ver(cb + ' · ' + L[cb[0]] + ', ' + L[cb[1]], (i) => i.combo === cb)) }],
         lectura,
         tabla: {
           cols: [{ k: 'clave', l: P.grupo }, ...(d >= 0 ? [{ k: 'desc', l: 'Descripción', t: 'txt' }] : []), { k: 'valor', l: 'Total', t: 'n' }, { k: 'media', l: 'Promedio mensual', t: 'n' }, { k: 'cv', l: 'Coef. variación', t: 'n' }, { k: 'mesesCon', l: 'Meses con movimiento', t: 'n' }, { k: 'clase', l: 'ABC', t: 'clase' }, { k: 'xyz', l: 'XYZ', t: 'clase' }, { k: 'combo', l: 'Matriz', t: 'clase' }],
           filas: items.sort((a, b) => b.valor - a.valor),
         },
+        filtros: fl, drill: crudoDe(g, P.grupo),
         ia: { meses: nMeses, desde: mesLabel(kMin), hasta: mesLabel(kMax), matriz: m3, top: val.slice(0, 25).map((i) => ({ clave: i.clave, desc: i.desc, total: i.valor, cv: i.cv, combo: i.combo })) },
       };
     },
@@ -796,8 +845,8 @@ const ANALISIS = [
     campos: [
       { id: 'grupo', label: 'Clave', tipo: '*', guess: R.clave },
       { id: 'desc', label: 'Descripción', tipo: '*', opc: true, guess: R.desc },
-      { id: 'a', label: 'Conteo físico', tipo: 'num', guess: R.fisico },
-      { id: 'b', label: 'Contra (sistema)', tipo: 'num', guess: [R.sistema, R.fisico] },
+      { id: 'a', label: 'Conteo físico', tipo: 'num', guess: R.fisico, estricto: true },
+      { id: 'b', label: 'Contra (sistema)', tipo: 'num', guess: [R.sistema, R.fisico], estricto: true },
       { id: 'tol', label: 'Tolerancia %', tipo: 'pct0', def: 0 },
     ],
     run(P, F) {
@@ -806,7 +855,7 @@ const ANALISIS = [
       const mapa = new Map(); let sinClave = 0;
       for (const r of F) {
         const k = r[g]; if (k == null) { sinClave++; continue; }
-        const key = String(k); let e = mapa.get(key);
+        const key = claveDe(k); let e = mapa.get(key);
         if (!e) { e = { clave: key, desc: d >= 0 ? r[d] : null, a: 0, b: 0, faltaA: false, faltaB: false, neg: false }; mapa.set(key, e); }
         // una celda vacía o con error no es un cero: no se sabe cuánto hay
         if (typeof r[a] === 'number') e.a += r[a]; else e.faltaA = true;
@@ -857,19 +906,21 @@ const ANALISIS = [
       if (ceros || sinDato) lectura.push(`Quedaron fuera ${ceros ? ceros + ' claves en cero en las dos columnas (no hay nada que comparar)' : ''}${ceros && sinDato ? ' y ' : ''}${sinDato ? sinDato + ' claves sin dato en ninguna de las dos' : ''}.`);
       if (sinClave) lectura.push(`${sinClave} renglones sin clave (totales o subtítulos) se ignoraron.`);
       const n15 = orden.slice(0, 15);
+      const fl = [{ l: 'Claves con diferencia', fn: (i) => i.dif !== 0 }, ...n15.map((i) => ({ l: P.grupo + ' ' + i.clave, fn: (x) => x === i }))];
       return {
         kpis: [
           { l: 'Confiabilidad clave por clave', v: pct(confClave), n: 'Σ menor / Σ mayor, pondera por cantidad' + (excluidas ? ` · ${excluidas} claves excluidas` : '') },
           { l: 'Confiabilidad por totales', v: confTot == null ? '—' : pct(confTot), n: confTot == null ? 'un total es negativo' : 'como en el Excel' },
-          tol ? { l: `Dentro de ±${fmt(tol * 100)}% (IRA)`, v: dentro + ' / ' + items.length, n: pct(dentro / items.length) + ' de claves comparables' } : { l: 'Claves exactas (IRA)', v: exactas + ' / ' + items.length, n: pct(exactas / items.length) + ' de claves comparables' },
-          { l: 'Diferencia neta', v: (tA - tB > 0 ? '+' : '') + fmt(tA - tB), n: 'por totales · descuadre clave por clave ' + fmt(totAbs) },
+          tol ? { l: `Dentro de ±${fmt(tol * 100)}% (IRA)`, v: dentro + ' / ' + items.length, n: pct(dentro / items.length) + ' de claves comparables', f: fl.push({ l: `Fuera de ±${fmt(tol * 100)}%`, fn: (i) => items.includes(i) && !(i.abs <= tol * Math.max(i.a, i.b)) }) - 1 } : { l: 'Claves exactas (IRA)', v: exactas + ' / ' + items.length, n: pct(exactas / items.length) + ' de claves comparables', f: fl.push({ l: 'Claves exactas', fn: (i) => i.estado === 'Exacta' }) - 1 },
+          { l: 'Diferencia neta', v: (tA - tB > 0 ? '+' : '') + fmt(tA - tB), n: 'por totales · descuadre clave por clave ' + fmt(totAbs), f: 0 },
         ],
-        graficas: [{ t: 'Las 15 diferencias más grandes', h: divergente(n15.map((i) => ({ l: i.clave, v: i.dif, tip: `${i.clave}${i.desc ? ' · ' + i.desc : ''}: físico ${fmt(i.a)}, sistema ${fmt(i.b)}` }))), ley: [['var(--pos)', 'Sobra en físico'], ['var(--neg)', 'Falta en físico']] }],
+        graficas: [{ t: 'Las 15 diferencias más grandes', h: divergente(n15.map((i, k) => ({ l: i.clave, v: i.dif, f: k + 1, tip: `${i.clave}${i.desc ? ' · ' + i.desc : ''}: físico ${fmt(i.a)}, sistema ${fmt(i.b)}` }))), ley: [['var(--pos)', 'Sobra en físico'], ['var(--neg)', 'Falta en físico']] }],
         lectura,
         tabla: {
           cols: [{ k: 'clave', l: P.grupo }, ...(d >= 0 ? [{ k: 'desc', l: 'Descripción', t: 'txt' }] : []), { k: 'a', l: P.a, t: 'n' }, { k: 'b', l: P.b, t: 'n' }, { k: 'dif', l: 'Diferencia', t: 'n' }, { k: 'conf', l: 'Confiabilidad', t: 'p' }, { k: 'estado', l: 'Estado', t: 'estado' }],
           filas: [...orden, ...incompletas, ...negativas],
         },
+        filtros: fl, drill: crudoDe(g, P.grupo),
         ia: { excluidas, tolerancia: tol, dentroTolerancia: dentro, totalFisico: tA, totalSistema: tB, confTotales: confTot, confClave, exactas, claves: items.length, soloFisico: soloA, soloSistema: soloB, mayores: orden.slice(0, 20).map((i) => ({ clave: i.clave, desc: i.desc, fisico: i.a, sistema: i.b, dif: i.dif })) },
       };
     },
@@ -898,6 +949,7 @@ const ANALISIS = [
       // la variación % solo tiene sentido contra un mes anterior positivo
       serie.forEach((s, i) => { s.mes = s.l; s.total = s.v; s.difAnt = i ? s.v - serie[i - 1].v : null; s.var = i && serie[i - 1].v > 0 ? s.v / serie[i - 1].v - 1 : null; });
       const unidad = m < 0 ? 'renglones' : P.medida, total = suma(serie.map((s) => s.v));
+      const porMes = (s) => crudo('Renglones de ' + s.l, (r) => r[f] instanceof Date && mesKey(r[f]) === s.k);
       const mejor = serie.reduce((a, b) => (b.v > a.v ? b : a)), peor = serie.reduce((a, b) => (b.v < a.v ? b : a));
       const prom = total / serie.length, ult = serie[serie.length - 1];
       const lectura = [
@@ -918,9 +970,10 @@ const ANALISIS = [
       if (ign) lectura.push(`${ign} renglones sin fecha válida${m >= 0 ? ' o sin número' : ''} se ignoraron.`);
       return {
         kpis: [{ l: 'Total ' + unidad, v: fmt(total) }, { l: 'Promedio mensual', v: fmt(prom) }, { l: 'Mes más alto', v: mejor.l, n: fmt(mejor.v) }, { l: 'Último mes', v: ult.l, n: fmt(ult.v) + (ult.var != null ? ' · ' + (ult.var >= 0 ? '+' : '') + pct(ult.var) : '') }],
-        graficas: [{ t: unidad + ' por mes', h: barrasV(serie) }],
+        graficas: [{ t: unidad + ' por mes', h: barrasV(serie.map((x, i) => ({ ...x, f: i }))) }],
         lectura,
         tabla: { cols, filas: serie },
+        filtros: serie.map(porMes), drill: porMes,
         ia: { unidad, meses: serie.map((s) => ({ mes: s.l, total: s.v })), principales: principales.map((p) => ({ clave: p, total: totDim.get(p) })) },
       };
     },
@@ -946,7 +999,7 @@ const ANALISIS = [
         // si se eligió qué sumar, un renglón en cero no cuenta como movimiento
         if (m >= 0 && r[m] === 0) { ceros++; continue; }
         if (!maxF || fe > maxF) maxF = fe;
-        const key = String(k); let e = mapa.get(key);
+        const key = claveDe(k); let e = mapa.get(key);
         if (!e) { e = { clave: key, desc: d >= 0 ? r[d] : null, ultima: fe, primera: fe, n: 0, suma: 0 }; mapa.set(key, e); }
         if (fe > e.ultima) e.ultima = fe; if (fe < e.primera) e.primera = fe; e.n++;
         if (m >= 0 && typeof r[m] === 'number') e.suma += r[m];
@@ -957,6 +1010,8 @@ const ANALISIS = [
       const items = [...mapa.values()].map((e) => { e.dias = Math.round((corte - e.ultima) / DIA); e.tramo = tramos.find((t) => e.dias <= t[1])[0]; return e; }).sort((a, b) => b.dias - a.dias);
       const cuenta = tramos.map(([l]) => ({ l, v: items.filter((i) => i.tramo === l).length }));
       const mas90 = items.filter((i) => i.dias > 90);
+      const fl = tramos.map(([l]) => ({ l: 'Tramo ' + l, fn: (i) => i.tramo === l }));
+      const ver = (l, fn) => fl.push({ l, fn }) - 1;
       const lectura = [
         `Corte al ${fFecha(corte)}. De ${items.length} elementos, ${mas90.length} (${pct(mas90.length / items.length)}) llevan más de 90 días sin movimiento.`,
         items[0] ? `El más antiguo es ${items[0].clave}${items[0].desc ? ' (' + items[0].desc + ')' : ''}: ${items[0].dias} días desde el ${fFecha(items[0].ultima)}.` : '',
@@ -966,10 +1021,11 @@ const ANALISIS = [
       if (ceros) lectura.push(`${ceros} renglones con «${P.medida}» en cero no cuentan como movimiento.`);
       if (ign) lectura.push(`${ign} renglones sin elemento o fecha se ignoraron.`);
       return {
-        kpis: [{ l: 'Elementos', v: items.length }, { l: 'Más de 90 días', v: mas90.length, n: pct(mas90.length / items.length) }, { l: 'Más de 180 días', v: items.filter((i) => i.dias > 180).length }, { l: 'Fecha de corte', v: fFecha(corte) }],
-        graficas: [{ t: 'Elementos por días sin movimiento', h: barrasH(cuenta.map((c, k) => ({ ...c, k })), { colorDe: (x) => (x.k < 2 ? 'var(--s3)' : x.k < 4 ? 'var(--s2)' : 'var(--s1)') }) }],
+        kpis: [{ l: 'Elementos', v: items.length }, { l: 'Más de 90 días', v: mas90.length, n: pct(mas90.length / items.length), f: ver('Más de 90 días', (i) => i.dias > 90) }, { l: 'Más de 180 días', v: items.filter((i) => i.dias > 180).length, f: ver('Más de 180 días', (i) => i.dias > 180) }, { l: 'Fecha de corte', v: fFecha(corte) }],
+        graficas: [{ t: 'Elementos por días sin movimiento', h: barrasH(cuenta.map((c, k) => ({ ...c, k, f: k })), { colorDe: (x) => (x.k < 2 ? 'var(--s3)' : x.k < 4 ? 'var(--s2)' : 'var(--s1)') }) }],
         lectura,
         tabla: { cols: [{ k: 'clave', l: P.grupo }, ...(d >= 0 ? [{ k: 'desc', l: 'Descripción', t: 'txt' }] : []), { k: 'ultima', l: 'Último movimiento', t: 'f' }, { k: 'dias', l: 'Días', t: 'n' }, { k: 'tramo', l: 'Tramo' }, { k: 'n', l: 'Movimientos', t: 'n' }, ...(m >= 0 ? [{ k: 'suma', l: 'Σ ' + P.medida, t: 'n' }] : [])], filas: items },
+        filtros: fl, drill: crudoDe(g, P.grupo),
         ia: { corte: fFecha(corte), tramos: cuenta, masAntiguos: items.slice(0, 20).map((i) => ({ clave: i.clave, desc: i.desc, dias: i.dias, suma: i.suma })) },
       };
     },
@@ -978,7 +1034,7 @@ const ANALISIS = [
     id: 'rfm', nombre: 'Clientes RFM', corta: 'Quién compra, quién se está yendo',
     desc: 'Califica a cada cliente por Recencia (qué tan reciente compró), Frecuencia (cuántas veces) y Monto. Con eso los agrupa en segmentos accionables.',
     campos: [
-      { id: 'cliente', label: 'Cliente', tipo: '*', guess: R.cliente },
+      { id: 'cliente', label: 'Cliente', tipo: '*', guess: R.cliente, estricto: true },
       { id: 'fecha', label: 'Fecha', tipo: 'fecha' },
       { id: 'medida', label: 'Monto o cantidad', tipo: 'num', opc: true, vacio: '(contar renglones)', guess: [R.importe, R.cant] },
       { id: 'folio', label: 'Folio / pedido', tipo: '*', opc: true, guess: /folio|factura|pedido|remision|ticket/, ayuda: 'para contar compras y no renglones' },
@@ -990,7 +1046,7 @@ const ANALISIS = [
         const k = r[c], fe = r[f]; const v = m < 0 ? 1 : r[m];
         if (k == null || !(fe instanceof Date) || typeof v !== 'number') { ign++; continue; }
         if (!maxF || fe > maxF) maxF = fe;
-        const key = String(k); let e = mapa.get(key);
+        const key = claveDe(k); let e = mapa.get(key);
         if (!e) { e = { clave: key, ultima: fe, compras: new Set(), monto: 0 }; mapa.set(key, e); }
         if (fe > e.ultima) e.ultima = fe;
         if (fo >= 0 && r[fo] == null) sinFolio++;
@@ -1017,6 +1073,7 @@ const ANALISIS = [
       });
       const SEG = ['Campeones', 'Leales', 'Nuevos o de una vez', 'Ocasionales', 'En riesgo', 'Dormidos'];
       const cuenta = SEG.map((s) => ({ l: s, v: items.filter((i) => i.seg === s).length, m: suma(items.filter((i) => i.seg === s).map((i) => i.monto)) }));
+      const fl = SEG.map((sg) => ({ l: sg, fn: (i) => i.seg === sg }));
       const tot = suma(M), riesgo = items.filter((i) => i.seg === 'En riesgo').sort((a, b) => b.monto - a.monto);
       const lectura = [
         `${items.length} clientes calificados al ${fFecha(maxF)} (última fecha del archivo).`,
@@ -1028,10 +1085,11 @@ const ANALISIS = [
       if (sinFolio) lectura.push(`⚠ ${sinFolio} renglones no tienen «${P.folio}»: se contaron por día (los de un mismo cliente y día cuentan como una compra), así que la frecuencia de esos clientes es aproximada.`);
       if (ign) lectura.push(`${ign} renglones sin cliente, fecha o número se ignoraron.`);
       return {
-        kpis: [{ l: 'Clientes', v: items.length }, { l: 'Campeones', v: cuenta[0].v }, { l: 'En riesgo', v: cuenta[4].v }, { l: 'Dormidos', v: cuenta[5].v }],
-        graficas: [{ t: 'Clientes por segmento', h: barrasH(cuenta, { tip: (x) => `${x.l}: ${x.v} clientes · ${pct(x.m / tot)} del monto` }) }],
+        kpis: [{ l: 'Clientes', v: items.length }, { l: 'Campeones', v: cuenta[0].v, f: 0 }, { l: 'En riesgo', v: cuenta[4].v, f: 4 }, { l: 'Dormidos', v: cuenta[5].v, f: 5 }],
+        graficas: [{ t: 'Clientes por segmento', h: barrasH(cuenta.map((x, k) => ({ ...x, f: k })), { tip: (x) => `${x.l}: ${x.v} clientes · ${pct(x.m / tot)} del monto` }) }],
         lectura,
         tabla: { cols: [{ k: 'clave', l: P.cliente }, { k: 'ultima', l: 'Última compra', t: 'f' }, { k: 'dias', l: 'Días', t: 'n' }, { k: 'freq', l: frecL, t: 'n' }, { k: 'monto', l: m < 0 ? 'Renglones' : P.medida, t: 'n' }, { k: 'rfm', l: 'R·F·M' }, { k: 'seg', l: 'Segmento' }], filas: items.sort((a, b) => b.monto - a.monto) },
+        filtros: fl, drill: crudoDe(c, P.cliente),
         ia: { clientes: items.length, frecuencia: frecL, segmentos: cuenta, enRiesgo: riesgo.slice(0, 15).map((i) => ({ cliente: i.clave, dias: i.dias, compras: i.freq, monto: i.monto })) },
       };
     },
@@ -1128,10 +1186,10 @@ function eligeHoja(nombre, filaEnc) {
   eligeAnalisis(S.an);
 }
 function pintaAnalisis() {
-  const hayFecha = S.datos.cols.some((c) => c.tipo === 'fecha');
   $('#analisis').innerHTML = ANALISIS.map((a) => {
-    const pideFecha = a.campos.some((c) => c.tipo === 'fecha' && !c.opc);
-    return `<button class="an" data-an="${a.id}" ${pideFecha && !hayFecha ? 'data-tip="Esta hoja no tiene columnas de fecha"' : ''}><b>${a.nombre}</b><span>${a.corta}</span></button>`;
+    const falta = faltantes(a);
+    const tipF = falta.length ? `data-tip="Sin datos en esta hoja: falta ${esc(falta.map((c) => c.label).join(' y '))}"` : '';
+    return `<button class="an${falta.length ? ' sin' : ''}" data-an="${a.id}" ${tipF}><b>${a.nombre}</b><span>${falta.length ? 'Sin datos en esta hoja' : a.corta}</span></button>`;
   }).join('');
 }
 function opciones(campo) {
@@ -1145,7 +1203,8 @@ function adivina(campo, usados) {
   if (!ops.length) return '';
   const rx = [].concat(campo.guess || []);
   for (const r of rx) { const hit = ops.find((c) => r.test(norm(c.nombre))); if (hit) return hit.nombre; }
-  if (campo.opc) return '';
+  // un campo estricto no se rellena con cualquier columna: sin coincidencia, no hay datos
+  if (campo.opc || campo.estricto) return '';
   if (campo.tipo === '*') { const t = ops.find((c) => c.tipo === 'texto'); return (t || ops[0]).nombre; }
   // un consecutivo (INDICE, No., #) casi nunca es lo que se quiere medir
   return (ops.find((c) => !/^(indice|index|no\.?|num|numero|#|id|consecutivo)$/.test(norm(c.nombre))) || ops[0]).nombre;
@@ -1176,16 +1235,31 @@ function eligeAnalisis(id) {
     if (c.tipo === 'date') return `<div class="campo"><label for="p_${c.id}">${esc(c.label)}${ayuda}</label><input id="p_${c.id}" data-p="${c.id}" type="date" value="${esc(P[c.id])}"></div>`;
     const ops = opciones(c);
     return `<div class="campo"><label for="p_${c.id}">${esc(c.label)}${ayuda}</label><select id="p_${c.id}" data-p="${c.id}">
-      ${c.opc || !ops.length ? `<option value="">${esc(c.vacio || (ops.length ? '—' : 'no hay columnas de este tipo'))}</option>` : ''}
+      ${c.opc || (c.estricto && !P[c.id]) || !ops.length ? `<option value="">${esc(c.vacio || (c.opc ? '—' : ops.length ? '— no está en la hoja —' : 'no hay columnas de este tipo'))}</option>` : ''}
       ${ops.map((o) => `<option ${o.nombre === P[c.id] ? 'selected' : ''}>${esc(o.nombre)}</option>`).join('')}</select></div>`;
   }).join('');
   corre();
+}
+/** qué campos obligatorios no tienen columna en la hoja actual */
+function faltantes(def) {
+  const usados = new Set();
+  return def.campos.filter((c) => {
+    if (c.opc || ['pct', 'pct0', 'dec', 'date'].includes(c.tipo)) return false;
+    const v = adivina(c, usados); if (v) usados.add(v);
+    return !v;
+  });
+}
+function sinDatos(def, falta) {
+  const otras = S.libro.SheetNames.filter((n) => n !== S.hoja);
+  return `<div class="sin-datos"><b>No había datos para «${esc(def.nombre)}» en la hoja «${esc(S.hoja)}».</b>
+    <p>Falta una columna de ${falta.map((c) => `<b>${esc(c.label)}</b>`).join(' y ')}. La app no rellena ni supone datos que no vienen en el archivo, así que este análisis no se calcula.</p>
+    <p>Si la columna sí existe con otro nombre, elígela arriba.${otras.length ? ` Si está en otra hoja, cámbiala arriba (${otras.map(esc).join(', ')}).` : ''}</p></div>`;
 }
 function corre() {
   const def = ANALISIS.find((a) => a.id === S.an);
   const P = S.params; const out = $('#resultado');
   const falta = def.campos.filter((c) => !c.opc && !['pct', 'pct0', 'dec', 'date'].includes(c.tipo) && !P[c.id]);
-  if (falta.length) { S.res = null; S.refrescaTabla = null; out.innerHTML = `<p class="vacio">Esta hoja no tiene columna para «${falta.map((c) => c.label).join('», «')}». Prueba otra hoja o ajusta la fila de encabezados.</p>`; return; }
+  if (falta.length) { S.res = null; S.refrescaTabla = null; out.innerHTML = sinDatos(def, falta); return; }
   const malo = (v) => v === '' || v == null || !isFinite(+v);
   if (P.cA !== undefined && (malo(P.cA) || malo(P.cB) || +P.cA <= 0 || +P.cB > 100 || +P.cA >= +P.cB)) { S.res = null; S.refrescaTabla = null; out.innerHTML = '<p class="aviso">Los cortes deben cumplir 0 &lt; A &lt; B ≤ 100.</p>'; return; }
   if (P.tol !== undefined && (malo(P.tol) || +P.tol < 0 || +P.tol > 100)) { S.res = null; S.refrescaTabla = null; out.innerHTML = '<p class="aviso">La tolerancia va de 0 a 100%.</p>'; return; }
@@ -1212,7 +1286,7 @@ function celda(v, t) {
 }
 const LIMITE = 400;
 let imprimiendo = false;
-function pintaTabla(tabla, filtro = '', orden = null) {
+function pintaTabla(tabla, filtro = '', orden = null, clicable = false) {
   let filas = tabla.filas;
   if (filtro) { const q = norm(filtro); filas = filas.filter((f) => tabla.cols.some((c) => f[c.k] != null && norm(f[c.k] instanceof Date ? fFecha(f[c.k]) : f[c.k]).includes(q))); }
   if (orden) {
@@ -1220,39 +1294,77 @@ function pintaTabla(tabla, filtro = '', orden = null) {
     filas = [...filas].sort((a, b) => { const x = a[k], y = b[k]; if (x == null) return 1; if (y == null) return -1; return (x > y ? 1 : x < y ? -1 : 0) * dir; });
   }
   const cab = tabla.cols.map((c) => `<th class="${['n', 'p', 'pv'].includes(c.t) ? 'n' : ''}" data-k="${c.k}" ${orden && orden.k === c.k ? `data-orden="${orden.dir > 0 ? '▲' : '▼'}"` : ''}>${esc(c.l)}</th>`).join('');
-  const cuerpo = (imprimiendo ? filas : filas.slice(0, LIMITE)).map((f) => '<tr>' + tabla.cols.map((c) => celda(f[c.k], c.t)).join('') + '</tr>').join('');
-  return { html: `<div class="tabla-wrap"><table><thead><tr>${cab}</tr></thead><tbody>${cuerpo}</tbody></table></div>`, n: filas.length };
+  const visibles = imprimiendo ? filas : filas.slice(0, LIMITE);
+  const cuerpo = visibles.map((f, i) => `<tr${clicable ? ` class="clic" data-i="${i}" tabindex="0"` : ''}>` + tabla.cols.map((c) => celda(f[c.k], c.t)).join('') + '</tr>').join('');
+  return { html: `<div class="tabla-wrap"><table><thead><tr>${cab}</tr></thead><tbody>${cuerpo}</tbody></table></div>`, n: filas.length, visibles };
 }
 function pintaResultado(def, res) {
   const out = $('#resultado'); S.refrescaTabla = null;
   if (res.error) { out.innerHTML = `<p class="aviso">${esc(res.error)}</p>`; return; }
-  const kpis = `<div class="kpis">${res.kpis.map((k) => `<div class="kpi"><div class="k-l">${esc(k.l)}</div><div class="k-v">${esc(k.v)}</div>${k.n ? `<div class="k-n">${esc(k.n)}</div>` : ''}</div>`).join('')}</div>`;
+  const filtros = res.filtros || [];
+  const atrF = (f) => (f != null && filtros[f] ? ` data-f="${f}" class="kpi clic" tabindex="0" role="button" data-tip="Clic para ver la lista"` : ' class="kpi"');
+  const kpis = `<div class="kpis">${res.kpis.map((k) => `<div${atrF(k.f)}><div class="k-l">${esc(k.l)}</div><div class="k-v">${esc(k.v)}</div>${k.n ? `<div class="k-n">${esc(k.n)}</div>` : ''}</div>`).join('')}</div>`;
   const graf = res.graficas && res.graficas.length ? `<div class="graficas">${res.graficas.map((g) => `<div class="bloque grafica"><h3>${esc(g.t)}</h3>${g.h}${g.ley ? `<div class="leyenda">${g.ley.map(([c, l]) => `<span><i style="background:${c}"></i>${esc(l)}</span>`).join('')}</div>` : ''}</div>`).join('')}</div>` : '';
+  const pista = filtros.length || res.drill ? `<p class="pista">Haz clic en una barra, un recuadro o un renglón de la tabla para ver qué hay detrás.</p>` : '';
   const lect = `<div class="lectura bloque"><h3>Lectura automática</h3><ul>${res.lectura.map((l) => `<li>${esc(l)}</li>`).join('')}</ul></div>`;
   const acc = `<div class="acciones"><button class="btn" id="xls">Descargar Excel</button><button class="btn sec" id="imprime">Imprimir / PDF</button></div>`;
-  const tb = `<div class="bloque"><div class="tabla-top"><h3>Detalle · ${fmt(res.tabla.filas.length)} renglones</h3><input type="search" id="buscar" placeholder="Buscar en la tabla…"></div><div id="tablaCont"></div><p class="nota-tabla" id="notaTabla"></p></div>`;
-  out.innerHTML = kpis + graf + lect + acc + tb + panelIA();
-  let orden = null;
-  const refresca = () => {
-    const { html, n } = pintaTabla(res.tabla, $('#buscar').value, orden);
-    $('#tablaCont').innerHTML = html;
-    $('#notaTabla').textContent = (n > LIMITE ? `Se muestran ${LIMITE} de ${fmt(n)}; el Excel descargado trae todos. ` : '') + 'Clic en un encabezado para ordenar. Calculado en ' + Math.max(1, Math.round(res.ms)) + ' ms.';
+  const tb = `<div class="bloque" id="detalle"><div class="tabla-top"><h3 id="tituloTabla"></h3><input type="search" id="buscar" placeholder="Buscar en la tabla…"></div><div class="migas" id="migas" hidden></div><div id="tablaCont"></div><p class="nota-tabla" id="notaTabla"></p></div>`;
+  out.innerHTML = pista + kpis + graf + lect + acc + tb + panelIA();
+  // pila de vistas: [] = tabla completa; cada clic agrega un filtro o los renglones originales de un elemento
+  let orden = null, pila = [], visibles = [];
+  const actual = () => pila[pila.length - 1];
+  const tablaDe = (v) => {
+    if (!v) return res.tabla;
+    if (v.tabla) return (v._t ||= v.tabla());
+    return { cols: res.tabla.cols, filas: res.tabla.filas.filter(v.fn) };
   };
+  const refresca = () => {
+    const v = actual(), t = tablaDe(v), clicable = !!res.drill && !(v && v.crudo);
+    const r = pintaTabla(t, $('#buscar').value, orden, clicable); visibles = r.visibles;
+    $('#tablaCont').innerHTML = r.html;
+    $('#tituloTabla').textContent = (v ? v.l : 'Detalle') + ' · ' + fmt(t.filas.length) + (t.filas.length === 1 ? ' renglón' : ' renglones') + (v && v.crudo ? ' del archivo' : '');
+    const migas = $('#migas'); migas.hidden = !pila.length;
+    migas.innerHTML = pila.length ? `<button class="btn-link" data-nivel="0">← Ver todo</button>` + pila.map((x, i) => `<span>›</span>${i < pila.length - 1 ? `<button class="btn-link" data-nivel="${i + 1}">${esc(x.l)}</button>` : `<b>${esc(x.l)}</b>`}`).join('') : '';
+    $('#notaTabla').textContent = (r.n > LIMITE ? `Se muestran ${LIMITE} de ${fmt(r.n)}; el Excel descargado trae todos. ` : '') + (v && v.crudo ? 'Son los renglones tal como vienen en tu archivo; «Fila» es el número de fila en Excel. ' : clicable ? 'Clic en un renglón para ver sus renglones del archivo. ' : '') + 'Clic en un encabezado para ordenar. Calculado en ' + Math.max(1, Math.round(res.ms)) + ' ms.';
+  };
+  const abre = (v, nueva = true) => {
+    if (!v) return;
+    pila = nueva ? [v] : [...pila, v]; orden = null; $('#buscar').value = '';
+    refresca();
+    $('#detalle').scrollIntoView({ behavior: 'smooth', block: 'start' });
+  };
+  S.abreVista = abre;
   refresca();
   $('#buscar').addEventListener('input', refresca);
+  $('#migas').addEventListener('click', (e) => {
+    const b = e.target.closest('[data-nivel]'); if (!b) return;
+    pila = pila.slice(0, +b.dataset.nivel); orden = null; refresca();
+  });
+  const fila = (tr) => { const f = visibles[+tr.dataset.i]; if (f) abre(res.drill(f), false); };
   $('#tablaCont').addEventListener('click', (e) => {
-    const th = e.target.closest('th'); if (!th) return;
-    orden = orden && orden.k === th.dataset.k ? { k: th.dataset.k, dir: -orden.dir } : { k: th.dataset.k, dir: ['n', 'p', 'pv'].includes(res.tabla.cols.find((c) => c.k === th.dataset.k).t) ? -1 : 1 };
-    refresca();
+    const th = e.target.closest('th');
+    if (th) {
+      const t = tablaDe(actual()), c = t.cols.find((x) => x.k === th.dataset.k);
+      orden = orden && orden.k === th.dataset.k ? { k: th.dataset.k, dir: -orden.dir } : { k: th.dataset.k, dir: ['n', 'p', 'pv'].includes(c.t) ? -1 : 1 };
+      return refresca();
+    }
+    const tr = e.target.closest('tr[data-i]'); if (tr) fila(tr);
+  });
+  $('#tablaCont').addEventListener('keydown', (e) => { const tr = e.target.closest('tr[data-i]'); if (tr && e.key === 'Enter') fila(tr); });
+  // barras, recuadros de la matriz y tarjetas con data-f
+  const deFiltro = (el) => { const v = filtros[+el.dataset.f]; ocultaTip(); abre(v); };
+  out.querySelectorAll('.graficas [data-f], .kpis [data-f]').forEach((el) => {
+    el.addEventListener('click', () => deFiltro(el));
+    el.addEventListener('keydown', (e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); deFiltro(el); } });
   });
   $('#xls').addEventListener('click', () => exporta(def, res));
   $('#imprime').addEventListener('click', () => window.print());
   S.refrescaTabla = refresca;
   conectaIA(def, res);
   const pg = res.graficas && res.graficas.find((g) => g.pareto);
-  if (pg) conectaPareto(pg.pareto);
+  if (pg) conectaPareto(pg.pareto, res.drill);
 }
-function conectaPareto(items) {
+function conectaPareto(items, drill) {
   const capa = document.querySelector('[data-pareto]'); if (!capa) return;
   const svgEl = capa.ownerSVGElement, punto = svgEl.querySelector('#paretoPunto');
   const L = +capa.dataset.l, w = +capa.dataset.w, T = 14, h = 270 - 14 - 34;
@@ -1262,9 +1374,15 @@ function conectaPareto(items) {
     const i = Math.min(items.length - 1, Math.max(0, Math.ceil(((q.x - L) / w) * items.length) - 1));
     const it = items[i];
     punto.style.display = ''; punto.setAttribute('cx', L + ((i + 1) / items.length) * w); punto.setAttribute('cy', T + h - it.acum * h);
-    muestraTip(`<b>${esc(it.clave)}</b>${it.desc ? '<br>' + esc(it.desc) : ''}<br>#${it.rank} de ${items.length} · clase ${it.clase}<br>${fmt(it.valor)} (${pct(it.pct)}) · acumulado ${pct(it.acum)}`, e);
+    muestraTip(`<b>${esc(it.clave)}</b>${it.desc ? '<br>' + esc(it.desc) : ''}<br>#${it.rank} de ${items.length} · clase ${it.clase}<br>${fmt(it.valor)} (${pct(it.pct)}) · acumulado ${pct(it.acum)}${drill ? '<br><i>Clic para ver sus renglones</i>' : ''}`, e);
   });
   capa.addEventListener('mouseleave', () => { punto.style.display = 'none'; ocultaTip(); });
+  if (drill) capa.addEventListener('click', (e) => {
+    const p = svgEl.createSVGPoint(); p.x = e.clientX; p.y = e.clientY;
+    const q = p.matrixTransform(svgEl.getScreenCTM().inverse());
+    const it = items[Math.min(items.length - 1, Math.max(0, Math.ceil(((q.x - L) / w) * items.length) - 1))];
+    ocultaTip(); S.abreVista(drill(it), true);
+  });
 }
 
 // ---------- Excel de salida ----------
