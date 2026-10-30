@@ -269,6 +269,93 @@ tbody tr.clic:focus-visible { outline: 2px solid var(--azul); outline-offset: -2
 .pie b { color: var(--verde); }
 @media print { .pie, .aviso-ejemplo { display: none !important; } }
 
+.atipicos { flex-basis: 100%; margin-top: 8px; padding: 10px 12px; border-left: 3px solid var(--alerta); background: var(--sup-2); border-radius: 0 8px 8px 0; color: var(--tinta); font-size: 13px; }
+.atipicos label { display: inline-flex; align-items: center; gap: 6px; margin-left: 6px; font-weight: 600; cursor: pointer; }
+.atipicos input { width: auto; }
+
+/* presentación */
+.presentar { margin-left: auto; }
+.deck { position: fixed; inset: 0; z-index: 50; background: #0d0d10; display: flex; flex-direction: column; }
+.deck-barra { display: flex; align-items: center; gap: 8px; padding: 10px 14px; color: #f1efe9; font-size: 13px; }
+.deck-barra .btn { padding: 6px 12px; }
+.deck-barra .btn.sec { background: transparent; color: #f1efe9; border-color: #44444c; }
+.deck-esp { flex: 1; }
+.deck-escena { flex: 1; position: relative; overflow: hidden; }
+.slide {
+  --azul: #c0241a;
+  --azul-osc: #9c1d15;
+  --verde: #e03127;
+  --verde-osc: #2e7d4f;
+  --verde-pal: #e6efe8;
+  --fondo: #f1efe9;
+  --sup: #fbfaf7;
+  --sup-2: #ece9e1;
+  --borde: #dcd8ce;
+  --tinta: #16161a;
+  --tinta-2: #4f5157;
+  --tinta-3: #7d7f85;
+  --rejilla: #e5e1d8;
+  /* clases A/B/C y escalas: un solo tono, de oscuro (más) a claro (menos) */
+  --s1: #9c1d15;
+  --s2: #e03127;
+  --s3: #f4b3ac;
+  /* divergente: sobra (humo) / falta (mecha) */
+  --pos: #676a70;
+  --neg: #e03127;
+  --alerta: #8a6100;
+  --mal: #c0241a;
+  --bien: #2e7d4f;
+  --sombra: 0 1px 2px rgb(22 22 26 / 6%), 0 4px 16px rgb(22 22 26 / 6%);
+  color-scheme: light;
+  color-scheme: light;
+  position: absolute; left: 50%; top: 50%; width: 1280px; height: 720px; margin: -360px 0 0 -640px; transform-origin: center;
+  background: var(--sup); color: var(--tinta); padding: 52px 64px 64px; box-sizing: border-box; overflow: hidden;
+  display: flex; flex-direction: column; gap: 14px;
+}
+.slide[hidden] { display: none; }
+.s-ceja { margin: 0; font-size: 15px; font-weight: 700; letter-spacing: .06em; text-transform: uppercase; color: var(--azul); }
+.slide h1 { margin: 0; font-size: 54px; line-height: 1.05; letter-spacing: -.02em; }
+.slide h2 { margin: 0; font-size: 28px; line-height: 1.25; font-weight: 700; max-width: 1100px; text-wrap: balance; }
+.s-sub { margin: 0 0 6px; font-size: 13px; text-transform: uppercase; letter-spacing: .05em; color: var(--tinta-2); }
+.s-portada { justify-content: center; gap: 18px; background: linear-gradient(135deg, var(--sup) 60%, var(--sup-2)); }
+.s-portada .s-logo .logo, .s-portada .s-logo img, .s-portada .s-logo svg { height: 64px; width: auto; }
+.s-meta { margin: 0; font-size: 19px; color: var(--tinta-2); }
+.s-cuerpo { flex: 1; min-height: 0; display: grid; grid-template-columns: 1.35fr 1fr; gap: 36px; }
+.s-cuerpo.s-sin-grafica { grid-template-columns: 1fr; }
+.s-grafica { min-height: 0; display: flex; flex-direction: column; }
+.s-grafica svg { flex: 1; min-height: 0; width: 100%; height: 100%; max-height: 470px; }
+.s-lado { display: flex; flex-direction: column; gap: 18px; min-width: 0; }
+.s-kpis { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+.s-kpis > div { border: 1px solid var(--borde); border-radius: 12px; padding: 12px 14px; display: grid; gap: 2px; }
+.s-kpis span { font-size: 12.5px; font-weight: 600; color: var(--tinta-2); }
+.s-kpis b { font-size: 26px; line-height: 1.15; letter-spacing: -.01em; }
+.s-kpis small { font-size: 12px; color: var(--tinta-3); }
+.s-puntos { margin: 0; padding-left: 20px; display: grid; gap: 10px; font-size: 16px; line-height: 1.4; }
+.s-resumen { list-style: none; margin: 6px 0 0; padding: 0; display: grid; gap: 10px; }
+.s-resumen li { display: grid; grid-template-columns: 230px 1fr 210px; gap: 18px; align-items: baseline; padding: 10px 0; border-bottom: 1px solid var(--rejilla); font-size: 15.5px; }
+.s-resumen b { color: var(--azul); }
+.s-resumen em { font-style: normal; font-weight: 700; text-align: right; }
+.s-tabla { width: 100%; border-collapse: collapse; font-size: 15px; }
+.s-tabla th, .s-tabla td { padding: 8px 10px; border-bottom: 1px solid var(--rejilla); text-align: left; white-space: nowrap; }
+.s-tabla th { background: var(--sup-2); color: var(--tinta-2); font-size: 13px; }
+.s-tabla .n { text-align: right; }
+.s-tabla td.txt { white-space: normal; }
+.s-notas { margin: 0; padding-left: 20px; display: grid; gap: 9px; font-size: 15.5px; line-height: 1.4; }
+.s-alerta { color: var(--mal); font-weight: 600; }
+.s-tenue { color: var(--tinta-3); }
+.s-pie { position: absolute; left: 64px; right: 64px; bottom: 22px; display: flex; justify-content: space-between; font-size: 12px; color: var(--tinta-3); }
+@media print {
+  @page { size: 1280px 720px; margin: 0; }
+  body.con-deck > *:not(#deck) { display: none !important; }
+  body.con-deck { background: #fff; }
+  body.con-deck .deck { position: static; background: none; display: block; }
+  body.con-deck .deck-barra { display: none !important; }
+  body.con-deck .deck-escena { overflow: visible; }
+  body.con-deck .slide, body.con-deck .slide[hidden] { display: flex !important; position: relative; left: 0; top: 0; margin: 0; transform: none !important; break-after: page; page-break-after: always; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+}
+.slide .clase.c1, .slide .clase.c2 { color: #fff !important; }
+.s-grafica svg { flex: none; height: auto; }
+
 </style>
 </head>
 <body>
@@ -311,6 +398,7 @@ tbody tr.clic:focus-visible { outline: 2px solid var(--azul); outline-offset: -2
         <span class="etq">Archivo</span>
         <strong id="nomArchivo"></strong>
         <button class="btn-link" id="otroArchivo">Cambiar archivo</button>
+        <button class="btn presentar" id="presentar">Presentación para dirección</button>
       </div>
       <div class="hojas" id="hojas"></div>
       <div class="encab" id="encab"></div>
@@ -326,6 +414,8 @@ tbody tr.clic:focus-visible { outline: 2px solid var(--azul); outline-offset: -2
 </main>
 
 <footer class="pie">Hecho por <b>Mecha</b> · IA y automatización para PyMEs</footer>
+
+<div id="deck" class="deck" role="dialog" aria-label="Presentación" hidden></div>
 
 <div id="tip" class="tip" role="tooltip" hidden></div>
 
@@ -533,9 +623,41 @@ function leeHoja(ws, filaEnc) {
   return { cols, filas: filasOk, numFila: numOk, filaEnc: h, total: aoa.length, totales };
 }
 
+// ---------- valores fuera de escala ----------
+const NO_MEDIDA = /folio|factura|^id\b|clave|codigo|telefono|^cp$|postal|rfc|serie/;
+/** un valor 20 veces más grande que cualquier otro de su columna, o un negativo mayor que el positivo más grande,
+    casi siempre es un error de captura que arrastra todos los totales */
+function detectaAtipicos(datos) {
+  const fuera = new Map();
+  const marca = (i, c, motivo) => {
+    if (!fuera.has(i)) fuera.set(i, []);
+    const l = fuera.get(i); if (!l.some((x) => x.col === c.nombre)) l.push({ col: c.nombre, v: datos.filas[i][c.j], motivo });
+  };
+  for (const c of datos.cols) {
+    if (c.tipo !== 'num' || NO_MEDIDA.test(norm(c.nombre))) continue;
+    let a1 = 0, a2 = 0, i1 = -1, maxPos = 0, n = 0;
+    datos.filas.forEach((r, i) => {
+      const v = r[c.j]; if (typeof v !== 'number') return;
+      n++; const a = Math.abs(v);
+      if (a > a1) { a2 = a1; a1 = a; i1 = i; } else if (a > a2) a2 = a;
+      if (v > maxPos) maxPos = v;
+    });
+    if (n < 20) continue;
+    if (a2 > 0 && a1 >= 20 * a2) marca(i1, c, `unas ${nf0.format(a1 / a2)} veces el siguiente valor más grande de la columna`);
+    // un negativo enorme solo es sospechoso donde casi no hay negativos (ventas); en diferencias o ajustes son normales
+    const negs = datos.filas.reduce((k, r) => k + (typeof r[c.j] === 'number' && r[c.j] < 0 ? 1 : 0), 0);
+    if (maxPos > 0 && negs <= Math.max(1, n * 0.01) && !/dif|variacion|cambio|saldo|ajuste|merma/.test(norm(c.nombre))) datos.filas.forEach((r, i) => { const v = r[c.j]; if (typeof v === 'number' && v < 0 && -v > maxPos) marca(i, c, 'un negativo mayor que el valor positivo más grande de la columna'); });
+  }
+  return fuera;
+}
+const filasActivas = () => (S.apartar && S.atipicos.size ? S.datos.filas.filter((_, i) => !S.atipicos.has(i)) : S.datos.filas);
+function textoAtipicos(max = 3) {
+  return [...S.atipicos.entries()].slice(0, max).map(([i, l]) => `fila ${S.datos.numFila[i]}: ${l.map((x) => `${x.col} = ${fmt(x.v)}`).join(', ')}`).join('; ') + (S.atipicos.size > max ? '…' : '');
+}
+
 // ---------- estado ----------
 const S = {
-  libro: null, archivo: '', hoja: null, datos: null, filaEnc: {},
+  libro: null, archivo: '', hoja: null, datos: null, filaEnc: {}, atipicos: new Map(), apartar: true,
   an: 'abc', params: {}, res: null,
 };
 const col = (nombre) => { const c = S.datos.cols.find((x) => x.nombre === nombre); return c ? c.j : -1; };
@@ -672,15 +794,18 @@ const crudoDe = (j, nombreCol) => (fila) => (fila.clave == null ? null : crudo(`
 
 // ---------- análisis ----------
 const R = {
-  clave: /^(clave|cve|codigo|sku|articulo|material|id|producto)\b|^producto$/,
-  desc: /desc|nombre|producto espa|^producto$/,
+  clave: /^(clave|cve|codigo|sku|articulo|material|id|producto)\b|^producto$|^product ?(key|id|code)$|^item ?(key|id|code)?$/,
+  desc: /desc|nombre|producto espa|^producto$|^product ?name$|^item ?name$/,
   cliente: /cliente|razon social/,
   proveedor: /prove/,
   cant: /cant|pzs|piezas|unidades|qty|kilos|^pz/,
   importe: /importe|venta|monto|subtotal|valor|total \$|\$/,
   precio: /precio|costo|p\.? ?unit/,
+  // columnas por pieza o de conversión: no se suman como venta ni como volumen
+  unitario: /precio|costo|unit|x ?paquete|por paquete|factor|tipo de cambio/,
   fisico: /mapeo|fisico|conteo|contado|real/,
   sistema: /drive|sistema|teorico|libro|esperado/,
+  vendedor: /vendedor|agente|asesor|ejecutivo/,
 };
 
 /** agrupa sumando una medida (o contando renglones) por una clave */
@@ -735,12 +860,12 @@ const ANALISIS = [
       const [A, B, C] = porClase;
       const fl = porClase.map((x) => ({ l: 'Clase ' + x.c, fn: (i) => i.clase === x.c }));
       const lectura = [
-        `${A.n} de ${pos.length} elementos (${pct(A.n / pos.length)}) concentran el ${pct(A.v / total)} de «${unidad}». Son la clase A: nunca deben faltar y conviene revisarlos más seguido.`,
-        `La clase C son ${C.n} elementos (${pct(C.n / pos.length)}) que suman apenas el ${pct(C.v / total)}. Candidatos a surtir bajo pedido, liquidar o revisar si vale la pena tenerlos.`,
+        `${A.n} de ${pos.length} elementos (${pct(A.n / pos.length)}) concentran el ${pct(A.v / total)} de «${unidad}». ${R.cliente.test(norm(P.grupo)) ? 'Son los clientes clase A: los que más hay que cuidar.' : R.vendedor.test(norm(P.grupo)) ? 'Son la clase A del equipo de ventas.' : 'Son la clase A: nunca deben faltar y conviene revisarlos más seguido.'}`,
+        `La clase C son ${C.n} elementos (${pct(C.n / pos.length)}) que suman apenas el ${pct(C.v / total)}.${R.cliente.test(norm(P.grupo)) || R.vendedor.test(norm(P.grupo)) ? '' : ' Candidatos a surtir bajo pedido, liquidar o revisar si vale la pena tenerlos.'}`,
         `El primero es ${pos[0].clave}${pos[0].desc ? ' (' + pos[0].desc + ')' : ''} con ${pct(pos[0].pct)} del total${pos.length > 4 ? '; los 5 primeros suman ' + pct(pos[4].acum) : ''}.`,
       ];
       if (cero.length) lectura.push(`${cero.length} elementos están en cero y quedan fuera de la clasificación.`);
-      if (neg.length) lectura.push(`⚠ ${neg.length} elementos tienen total negativo (${neg.slice(0, 4).map((i) => i.clave).join(', ')}${neg.length > 4 ? '…' : ''}). En un inventario eso suele ser un error de captura: revísalos.`);
+      if (neg.length) lectura.push(`⚠ ${neg.length} elementos tienen total negativo (${neg.slice(0, 4).map((i) => i.clave).join(', ')}${neg.length > 4 ? '…' : ''}). Suele ser un error de captura o devoluciones mayores que lo vendido; en un inventario casi siempre es error ser un error de captura: revísalos.`);
       if (sinClave) lectura.push(`${sinClave} renglones no tienen «${P.grupo}» (totales, subtítulos o vacíos) y se ignoraron.`);
       if (noNum) lectura.push(`${noNum} renglones no tienen número en «${P.medida}»${fx >= 0 ? ' o «' + P.factor + '»' : ''} y se ignoraron.`);
       if (fx < 0 && !R.importe.test(norm(P.medida))) lectura.push(`Este ABC es por volumen («${P.medida}»). Si el archivo trae precio o costo, ponlo en «Multiplicar por» para tenerlo en pesos.`);
@@ -810,8 +935,7 @@ const ANALISIS = [
       const cuenta = (c) => val.filter((i) => i.xyz === c).length;
       const fl = [], ver = (l, fn) => fl.push({ l, fn }) - 1;
       const lectura = [
-        `Se analizaron ${nMeses} meses (${mesLabel(kMin)} a ${mesLabel(kMax)}) y ${val.length} elementos con movimiento positivo.`,
-        `${cuenta('X')} estables (X), ${cuenta('Y')} variables (Y) y ${cuenta('Z')} erráticos (Z).`,
+        `De ${val.length} elementos con movimiento en ${nMeses} meses (${mesLabel(kMin)} a ${mesLabel(kMax)}): ${cuenta('X')} tienen demanda estable (X), ${cuenta('Y')} variable (Y) y ${cuenta('Z')} errática (Z).`,
         `AX/BX (${(m3.AX || 0) + (m3.BX || 0)}): demanda alta y predecible → reorden automático con poco stock de seguridad.`,
         `AZ (${m3.AZ || 0}): pesan mucho pero no se pueden predecir → revisar con ventas, pedir por proyecto y vigilar de cerca.`,
         `CZ (${m3.CZ || 0}): poco volumen y errático → candidatos a surtir solo bajo pedido.`,
@@ -1025,7 +1149,7 @@ const ANALISIS = [
         graficas: [{ t: 'Elementos por días sin movimiento', h: barrasH(cuenta.map((c, k) => ({ ...c, k, f: k })), { colorDe: (x) => (x.k < 2 ? 'var(--s3)' : x.k < 4 ? 'var(--s2)' : 'var(--s1)') }) }],
         lectura,
         tabla: { cols: [{ k: 'clave', l: P.grupo }, ...(d >= 0 ? [{ k: 'desc', l: 'Descripción', t: 'txt' }] : []), { k: 'ultima', l: 'Último movimiento', t: 'f' }, { k: 'dias', l: 'Días', t: 'n' }, { k: 'tramo', l: 'Tramo' }, { k: 'n', l: 'Movimientos', t: 'n' }, ...(m >= 0 ? [{ k: 'suma', l: 'Σ ' + P.medida, t: 'n' }] : [])], filas: items },
-        filtros: fl, drill: crudoDe(g, P.grupo),
+        filtros: fl, drill: crudoDe(g, P.grupo), destacado: mas90.length ? { l: 'Más de 90 días sin movimiento', fn: (i) => i.dias > 90 } : null,
         ia: { corte: fFecha(corte), tramos: cuenta, masAntiguos: items.slice(0, 20).map((i) => ({ clave: i.clave, desc: i.desc, dias: i.dias, suma: i.suma })) },
       };
     },
@@ -1074,7 +1198,7 @@ const ANALISIS = [
       const SEG = ['Campeones', 'Leales', 'Nuevos o de una vez', 'Ocasionales', 'En riesgo', 'Dormidos'];
       const cuenta = SEG.map((s) => ({ l: s, v: items.filter((i) => i.seg === s).length, m: suma(items.filter((i) => i.seg === s).map((i) => i.monto)) }));
       const fl = SEG.map((sg) => ({ l: sg, fn: (i) => i.seg === sg }));
-      const tot = suma(M), riesgo = items.filter((i) => i.seg === 'En riesgo').sort((a, b) => b.monto - a.monto);
+      const tot = suma(M.filter((v) => v > 0)), riesgo = items.filter((i) => i.seg === 'En riesgo').sort((a, b) => b.monto - a.monto);
       const lectura = [
         `${items.length} clientes calificados al ${fFecha(maxF)} (última fecha del archivo).`,
         `Campeones y leales: ${cuenta[0].v + cuenta[1].v} clientes con ${pct((cuenta[0].m + cuenta[1].m) / tot)} del ${m < 0 ? 'número de renglones' : '«' + P.medida + '»'}.`,
@@ -1089,7 +1213,7 @@ const ANALISIS = [
         graficas: [{ t: 'Clientes por segmento', h: barrasH(cuenta.map((x, k) => ({ ...x, f: k })), { tip: (x) => `${x.l}: ${x.v} clientes · ${pct(x.m / tot)} del monto` }) }],
         lectura,
         tabla: { cols: [{ k: 'clave', l: P.cliente }, { k: 'ultima', l: 'Última compra', t: 'f' }, { k: 'dias', l: 'Días', t: 'n' }, { k: 'freq', l: frecL, t: 'n' }, { k: 'monto', l: m < 0 ? 'Renglones' : P.medida, t: 'n' }, { k: 'rfm', l: 'R·F·M' }, { k: 'seg', l: 'Segmento' }], filas: items.sort((a, b) => b.monto - a.monto) },
-        filtros: fl, drill: crudoDe(c, P.cliente),
+        titular: riesgo.length ? 2 : 1, filtros: fl, drill: crudoDe(c, P.cliente), destacado: riesgo.length ? { l: 'Clientes en riesgo, mayor monto primero', fn: (i) => i.seg === 'En riesgo' } : null,
         ia: { clientes: items.length, frecuencia: frecL, segmentos: cuenta, enRiesgo: riesgo.slice(0, 15).map((i) => ({ cliente: i.clave, dias: i.dias, compras: i.freq, monto: i.monto })) },
       };
     },
@@ -1172,13 +1296,19 @@ function abreLibro(buf, nombre) {
 function eligeHoja(nombre, filaEnc) {
   S.hoja = nombre;
   if (filaEnc != null) S.filaEnc[nombre] = filaEnc;
-  S.datos = leeHoja(S.libro.Sheets[nombre], S.filaEnc[nombre]);
+  S.datos = leeHoja(S.libro.Sheets[nombre], S.filaEnc[nombre]); cacheDesc.clear();
   S.params = {};
   document.querySelectorAll('#hojas .chip').forEach((b) => b.setAttribute('aria-pressed', b.dataset.hoja === nombre));
   const tipos = { num: 0, fecha: 0, texto: 0 }; S.datos.cols.forEach((c) => tipos[c.tipo]++);
   const nt = S.datos.totales.length;
   $('#encab').innerHTML = `<span>${fmt(S.datos.filas.length)} renglones · ${S.datos.cols.length} columnas (${tipos.num} numéricas, ${tipos.fecha} de fecha)${nt ? ` · ${nt} renglón${nt > 1 ? 'es' : ''} de total excluido${nt > 1 ? 's' : ''}` : ''}</span>
     <span>· Encabezados en la fila <input type="number" min="1" id="filaEnc" value="${S.datos.filaEnc + 1}"></span>`;
+  S.atipicos = detectaAtipicos(S.datos); S.apartar = true;
+  if (S.atipicos.size) {
+    const [, l] = [...S.atipicos.entries()][0], n = S.atipicos.size;
+    $('#encab').insertAdjacentHTML('beforeend', `<div class="atipicos" role="alert">⚠ <b>${n} renglón${n > 1 ? 'es' : ''} con un valor fuera de escala</b> (${esc(textoAtipicos())}; ${esc(l[0].motivo)}). Casi seguro es un error de captura y movería todos los totales.
+      <label><input type="checkbox" id="apartar" checked> Dejar${n > 1 ? 'los' : 'lo'} fuera de los análisis</label></div>`);
+  }
   pintaAnalisis();
   // si la hoja no tiene fechas, no tiene caso abrir en un análisis que las pide
   const def = ANALISIS.find((a) => a.id === S.an);
@@ -1199,7 +1329,9 @@ function opciones(campo) {
   return [...cols.filter((c) => c.tipo === 'texto'), ...cols.filter((c) => c.tipo !== 'texto')];
 }
 function adivina(campo, usados) {
-  const ops = opciones(campo).filter((c) => !usados.has(c.nombre));
+  let ops = opciones(campo).filter((c) => !usados.has(c.nombre));
+  // sumar un precio unitario o las piezas por paquete da un número sin sentido: solo si no hay otra columna
+  if (campo.tipo === 'num' && campo.id !== 'factor') { const utiles = ops.filter((c) => !R.unitario.test(norm(c.nombre))); if (utiles.length) ops = utiles; }
   if (!ops.length) return '';
   const rx = [].concat(campo.guess || []);
   for (const r of rx) { const hit = ops.find((c) => r.test(norm(c.nombre))); if (hit) return hit.nombre; }
@@ -1207,14 +1339,13 @@ function adivina(campo, usados) {
   if (campo.opc || campo.estricto) return '';
   if (campo.tipo === '*') { const t = ops.find((c) => c.tipo === 'texto'); return (t || ops[0]).nombre; }
   // un consecutivo (INDICE, No., #) casi nunca es lo que se quiere medir
-  return (ops.find((c) => !/^(indice|index|no\.?|num|numero|#|id|consecutivo)$/.test(norm(c.nombre))) || ops[0]).nombre;
+  return (ops.find((c) => !/^(indice|index|no\.?|num|numero|#|id|consecutivo|folio|factura)$/.test(norm(c.nombre))) || ops[0]).nombre;
 }
 const DERIV_NOMBRE = /diferencia|dif |confiabilidad/;
-function eligeAnalisis(id) {
-  S.an = id;
-  document.querySelectorAll('#analisis .an').forEach((b) => b.setAttribute('aria-pressed', b.dataset.an === id));
-  const def = ANALISIS.find((a) => a.id === id);
-  const recordado = (lee('mecha-analisis:campos') || {})[firma() + '#' + id] || {};
+/** columnas para un análisis: lo que el usuario eligió antes en este formato de hoja o, si no, lo que se adivina */
+function paramsDe(def) {
+  const id = def.id;
+  const recordado = (lee('mecha-analisis:campos2') || {})[firma() + '#' + id] || {};
   const P = {}; const usados = new Set();
   for (const c of def.campos) {
     if (['pct', 'pct0', 'dec', 'date'].includes(c.tipo)) { P[c.id] = recordado[c.id] ?? c.def ?? ''; continue; }
@@ -1228,6 +1359,13 @@ function eligeAnalisis(id) {
     const par = S.datos.cols.find((c) => c.tipo === 'num' && c.nombre !== P.a && c.nombre.includes(' · ') && baseDe(c.nombre) === baseDe(P.a) && !/^dif/.test(norm(c.nombre.split(' · ')[0])) && !DERIV_NOMBRE.test(norm(c.nombre)));
     if (par && baseDe(P.b || '') !== baseDe(P.a)) P.b = par.nombre;
   }
+  return P;
+}
+function eligeAnalisis(id) {
+  S.an = id;
+  document.querySelectorAll('#analisis .an').forEach((b) => b.setAttribute('aria-pressed', b.dataset.an === id));
+  const def = ANALISIS.find((a) => a.id === id);
+  const P = paramsDe(def);
   S.params = P;
   $('#params').innerHTML = `<p class="desc-an">${esc(def.desc)}</p>` + def.campos.map((c) => {
     const ayuda = c.ayuda ? ` <i>· ${esc(c.ayuda)}</i>` : c.opc ? ' <i>· opcional</i>' : '';
@@ -1255,21 +1393,51 @@ function sinDatos(def, falta) {
     <p>Falta una columna de ${falta.map((c) => `<b>${esc(c.label)}</b>`).join(' y ')}. La app no rellena ni supone datos que no vienen en el archivo, así que este análisis no se calcula.</p>
     <p>Si la columna sí existe con otro nombre, elígela arriba.${otras.length ? ` Si está en otra hoja, cámbiala arriba (${otras.map(esc).join(', ')}).` : ''}</p></div>`;
 }
-function corre() {
-  const def = ANALISIS.find((a) => a.id === S.an);
-  const P = S.params; const out = $('#resultado');
+/** la descripción solo sirve si le corresponde una a cada clave (nombre del producto para su clave, no para un cliente) */
+const cacheDesc = new Map();
+function descEncaja(grupo, desc) {
+  const k = S.hoja + '\u0000' + grupo + '\u0000' + desc;
+  if (!cacheDesc.has(k)) {
+    const g = col(grupo), d = col(desc), vista = new Map(); let mixtas = 0;
+    for (const r of S.datos.filas) {
+      if (r[g] == null || r[d] == null) continue;
+      const key = claveDe(r[g]), v = String(r[d]), antes = vista.get(key);
+      if (antes === undefined) vista.set(key, v); else if (antes !== v && antes !== null) { vista.set(key, null); mixtas++; }
+    }
+    cacheDesc.set(k, vista.size > 0 && mixtas / vista.size <= 0.2);
+  }
+  return cacheDesc.get(k);
+}
+/** corre un análisis con sus columnas; no toca la pantalla (lo usan la vista y la presentación) */
+function calcula(def, P) {
+  if (P.desc && P.grupo && !descEncaja(P.grupo, P.desc)) P.desc = '';
   const falta = def.campos.filter((c) => !c.opc && !['pct', 'pct0', 'dec', 'date'].includes(c.tipo) && !P[c.id]);
-  if (falta.length) { S.res = null; S.refrescaTabla = null; out.innerHTML = sinDatos(def, falta); return; }
+  if (falta.length) return { falta };
   const malo = (v) => v === '' || v == null || !isFinite(+v);
-  if (P.cA !== undefined && (malo(P.cA) || malo(P.cB) || +P.cA <= 0 || +P.cB > 100 || +P.cA >= +P.cB)) { S.res = null; S.refrescaTabla = null; out.innerHTML = '<p class="aviso">Los cortes deben cumplir 0 &lt; A &lt; B ≤ 100.</p>'; return; }
-  if (P.tol !== undefined && (malo(P.tol) || +P.tol < 0 || +P.tol > 100)) { S.res = null; S.refrescaTabla = null; out.innerHTML = '<p class="aviso">La tolerancia va de 0 a 100%.</p>'; return; }
-  if (P.cX !== undefined && (malo(P.cX) || malo(P.cY) || +P.cX < 0 || +P.cX >= +P.cY)) { S.res = null; S.refrescaTabla = null; out.innerHTML = '<p class="aviso">Los cortes deben cumplir 0 ≤ X &lt; Y.</p>'; return; }
+  if (P.cA !== undefined && (malo(P.cA) || malo(P.cB) || +P.cA <= 0 || +P.cB > 100 || +P.cA >= +P.cB)) return { error: 'Los cortes deben cumplir 0 < A < B ≤ 100.' };
+  if (P.tol !== undefined && (malo(P.tol) || +P.tol < 0 || +P.tol > 100)) return { error: 'La tolerancia va de 0 a 100%.' };
+  if (P.cX !== undefined && (malo(P.cX) || malo(P.cY) || +P.cX < 0 || +P.cX >= +P.cY)) return { error: 'Los cortes deben cumplir 0 ≤ X < Y.' };
   const t0 = performance.now();
   let res;
-  try { res = def.run({ ...P, cA: +P.cA, cB: +P.cB, cX: +P.cX, cY: +P.cY }, S.datos.filas); }
+  try { res = def.run({ ...P, cA: +P.cA, cB: +P.cB, cX: +P.cX, cY: +P.cY }, def.id === 'calidad' ? S.datos.filas : filasActivas()); }
   catch (e) { console.error(e); res = { error: 'Algo falló al calcular: ' + e.message }; }
-  res.ms = performance.now() - t0; S.res = res;
-  const mem = lee('mecha-analisis:campos') || {}; mem[firma() + '#' + S.an] = P; guarda('mecha-analisis:campos', mem);
+  res.ms = performance.now() - t0;
+  if (res.lectura && S.atipicos.size) {
+    const n = S.atipicos.size, txt = textoAtipicos();
+    res.aviso = true;
+    res.lectura.unshift(S.apartar && def.id !== 'calidad'
+      ? `⚠ Se dej${n > 1 ? 'aron' : 'ó'} fuera ${n} renglón${n > 1 ? 'es' : ''} con valores fuera de escala (${txt}). Corrígelo${n > 1 ? 's' : ''} en el Excel; si son correctos, inclúyelos arriba.`
+      : `⚠ ${n} renglón${n > 1 ? 'es tienen' : ' tiene'} valores fuera de escala (${txt})${def.id === 'calidad' ? '' : ' y están incluidos en este cálculo'}.`);
+  }
+  return res;
+}
+function corre() {
+  const def = ANALISIS.find((a) => a.id === S.an);
+  const P = S.params, out = $('#resultado');
+  const res = calcula(def, P);
+  const sel = $('#p_desc'); if (sel && !P.desc) sel.value = '';
+  if (res.falta) { S.res = null; S.refrescaTabla = null; out.innerHTML = sinDatos(def, res.falta); return; }
+  S.res = res.error ? null : res;
   pintaResultado(def, res);
 }
 
@@ -1509,6 +1677,101 @@ function conectaIA(def, res) {
   });
 }
 
+// ---------- presentación para dirección ----------
+/** las diapositivas siempre se arman con todo el análisis disponible en la hoja, no con lo que está en pantalla */
+function armaPresentacion() {
+  const piezas = [], sinDatosL = [], notas = [];
+  const corta = (t, n) => { t = String(t ?? ''); return t.length > n ? t.slice(0, n - 1) + '…' : t; };
+  const agrega = (def, P, sufijo) => {
+    const res = calcula(def, P);
+    if (res.falta) { sinDatosL.push({ def, falta: res.falta, sufijo }); return; }
+    if (res.error) { sinDatosL.push({ def, error: res.error, sufijo }); return; }
+    piezas.push({ def, P, res, sufijo });
+    const usadas = def.campos.filter((c) => !['pct', 'pct0', 'dec', 'date'].includes(c.tipo) && P[c.id]).map((c) => `${c.label}: ${P[c.id]}`);
+    notas.push(`${def.nombre}${sufijo ? ' ' + sufijo : ''} — ${usadas.join(' · ')}`);
+  };
+  for (const def of ANALISIS) {
+    const P = paramsDe(def);
+    agrega(def, P, def.id === 'abc' && P.grupo ? 'por ' + P.grupo : '');
+    // para dirección importa el reparto por cliente y por vendedor, si el archivo los trae
+    if (def.id === 'abc' && P.medida) {
+      for (const rx of [R.cliente, R.vendedor]) {
+        const c = S.datos.cols.find((x) => x.tipo === 'texto' && rx.test(norm(x.nombre)) && x.nombre !== P.grupo);
+        if (c) agrega(def, { ...P, grupo: c.nombre, desc: '' }, 'por ' + c.nombre);
+      }
+    }
+  }
+  // periodo que cubre el archivo
+  let fMin = null, fMax = null;
+  const cf = S.datos.cols.find((c) => c.tipo === 'fecha');
+  if (cf) for (const r of filasActivas()) { const v = r[cf.j]; if (v instanceof Date) { if (!fMin || v < fMin) fMin = v; if (!fMax || v > fMax) fMax = v; } }
+  // en la portada clara va el logo claro, aunque la app esté en modo oscuro
+  const logo = (document.querySelector('.barra .logo img') || document.querySelector('.barra .logo') || {}).outerHTML || '';
+  const pie = (n, tot) => `<footer class="s-pie"><span>${esc(S.archivo)} · hoja «${esc(S.hoja)}»</span><span>${n} / ${tot}</span></footer>`;
+  const lecturas = (res) => {
+    const ls = res.lectura.filter((l) => !l.startsWith('⚠ Se dej') && !/^⚠ \d+ renglón/.test(l));
+    // el titular va primero: es la idea que dirección debe llevarse
+    const t = res.titular != null ? res.lectura[res.titular + (res.aviso ? 1 : 0)] : null;
+    return t && ls.includes(t) ? [t, ...ls.filter((l) => l !== t)] : ls;
+  };
+  const kpisH = (res, max = 4) => `<div class="s-kpis">${res.kpis.slice(0, max).map((k) => `<div><span>${esc(k.l)}</span><b>${esc(k.v)}</b>${k.n ? `<small>${esc(corta(k.n, 60))}</small>` : ''}</div>`).join('')}</div>`;
+  const tablaTop = (pz, n = 10) => {
+    const { res } = pz; let filas = res.tabla.filas, titulo = 'Detalle';
+    if (res.destacado) { filas = filas.filter(res.destacado.fn); titulo = res.destacado.l; }
+    const cols = res.tabla.cols.filter((c) => c.k !== 'rank').slice(0, 7);
+    if (!filas.length) return '';
+    return `<h3 class="s-sub">${esc(titulo)} · primeros ${Math.min(n, filas.length)} de ${fmt(filas.length)}</h3><table class="s-tabla"><thead><tr>${cols.map((c) => `<th class="${['n', 'p', 'pv'].includes(c.t) ? 'n' : ''}">${esc(c.l)}</th>`).join('')}</tr></thead><tbody>${filas.slice(0, n).map((f) => '<tr>' + cols.map((c) => (c.t === 'txt' ? `<td class="txt">${esc(corta(f[c.k], 46))}</td>` : celda(f[c.k], c.t))).join('') + '</tr>').join('')}</tbody></table>`;
+  };
+  const diapos = [];
+  // portada
+  diapos.push(() => `<section class="slide s-portada"><div class="s-logo">${logo}</div><p class="s-ceja">Análisis de datos para dirección</p><h1>${esc(S.archivo.replace(/\.(xlsx|xlsm|xls|csv|ods)$/i, ''))}</h1>
+    <p class="s-meta">Hoja «${esc(S.hoja)}» · ${fmt(filasActivas().length)} renglones${fMin ? ` · ${fFecha(fMin)} a ${fFecha(fMax)}` : ''}</p>
+    <p class="s-meta">Generado el ${fFecha(new Date())} · ${piezas.length} análisis${sinDatosL.length ? ` · ${sinDatosL.length} sin datos en este archivo` : ''}</p></section>`);
+  // resumen ejecutivo: una idea por análisis
+  diapos.push(() => `<section class="slide"><p class="s-ceja">Resumen ejecutivo</p><h2>Lo más importante de cada análisis</h2>
+    <ul class="s-resumen">${piezas.map((pz) => { const k = pz.res.kpis.find((x) => x.f != null) || pz.res.kpis[0]; return `<li><b>${esc(pz.def.nombre)}${pz.sufijo ? ' ' + esc(pz.sufijo) : ''}</b><span>${esc(corta(lecturas(pz.res)[0], 190))}</span><em>${esc(k.l)}: ${esc(k.v)}</em></li>`; }).join('')}</ul></section>`);
+  // una diapositiva por análisis, y otra con su detalle cuando hay tabla útil
+  for (const pz of piezas) {
+    const { def, res, sufijo } = pz, ls = lecturas(res);
+    const g = res.graficas && res.graficas[0];
+    diapos.push(() => `<section class="slide"><p class="s-ceja">${esc(def.nombre)}${sufijo ? ' · ' + esc(sufijo) : ''}</p><h2>${esc(corta(ls[0], 170))}</h2>
+      <div class="s-cuerpo${g ? '' : ' s-sin-grafica'}">${g ? `<div class="s-grafica grafica"><h3 class="s-sub">${esc(g.t)}</h3>${g.h}${g.ley ? `<div class="leyenda">${g.ley.map(([c, l]) => `<span><i style="background:${c}"></i>${esc(l)}</span>`).join('')}</div>` : ''}</div>` : ''}
+      <div class="s-lado">${kpisH(res)}<ul class="s-puntos">${ls.slice(1, g ? 4 : 6).map((l) => `<li>${esc(corta(l, 230))}</li>`).join('')}</ul></div></div></section>`);
+    if (def.id !== 'tend' && def.id !== 'calidad' && res.tabla.filas.length) diapos.push(() => `<section class="slide"><p class="s-ceja">${esc(def.nombre)}${sufijo ? ' · ' + esc(sufijo) : ''} · detalle</p>${tablaTop(pz)}</section>`);
+  }
+  // cómo se calculó: para que dirección sepa de dónde sale cada número
+  diapos.push(() => `<section class="slide"><p class="s-ceja">Notas</p><h2>Cómo se calculó</h2><ul class="s-notas">
+    ${S.atipicos.size ? `<li class="s-alerta">${S.apartar ? 'Se dejaron fuera' : 'Están incluidos'} ${S.atipicos.size} renglón(es) con valores fuera de escala: ${esc(textoAtipicos(4))}. Conviene corregirlos en el Excel.</li>` : ''}
+    ${S.datos.totales.length ? `<li>Se excluyeron ${S.datos.totales.length} renglones de total o subtotal para no sumar dos veces.</li>` : ''}
+    ${notas.map((n) => `<li>${esc(n)}</li>`).join('')}
+    ${sinDatosL.map((x) => `<li class="s-tenue">${esc(x.def.nombre)}${x.sufijo ? ' ' + esc(x.sufijo) : ''}: no se calculó. ${x.falta ? 'No había datos: falta ' + esc(x.falta.map((c) => c.label).join(' y ')) + ' en esta hoja.' : esc(x.error)}</li>`).join('')}
+    <li class="s-tenue">Todo se calculó en este equipo con el archivo tal como viene; no se inventa ni se completa ningún dato.</li></ul></section>`);
+  const tot = diapos.length;
+  return diapos.map((f, i) => f().replace(/<\/section>$/, pie(i + 1, tot) + '</section>')).join('');
+}
+let deckI = 0;
+function abrePresentacion() {
+  const deck = $('#deck');
+  deck.innerHTML = `<div class="deck-barra"><button class="btn sec" data-d="prev" aria-label="Anterior">←</button><span id="deckN"></span><button class="btn sec" data-d="next" aria-label="Siguiente">→</button>
+    <span class="deck-esp"></span><button class="btn sec" data-d="full">Pantalla completa</button><button class="btn" data-d="pdf">Descargar PDF</button><button class="btn sec" data-d="cerrar">Cerrar</button></div>
+    <div class="deck-escena" id="deckEscena">${armaPresentacion()}</div>`;
+  deck.querySelectorAll('[data-f]').forEach((el) => { el.removeAttribute('data-f'); el.classList.remove('clic'); });
+  deck.querySelectorAll('[data-tip]').forEach((el) => el.setAttribute('data-tip', el.getAttribute('data-tip').replace(' · clic para ver la lista', '')));
+  deck.hidden = false; document.body.classList.add('con-deck'); deckI = 0; muestraDiapo();
+}
+function muestraDiapo() {
+  const ss = [...document.querySelectorAll('#deck .slide')]; deckI = Math.max(0, Math.min(ss.length - 1, deckI));
+  ss.forEach((s, i) => { s.hidden = i !== deckI; });
+  $('#deckN').textContent = `${deckI + 1} / ${ss.length}`;
+  ajustaDiapo();
+}
+function ajustaDiapo() {
+  const esc_ = $('#deckEscena'); if (!esc_) return;
+  const k = Math.min(esc_.clientWidth / 1280, esc_.clientHeight / 720);
+  document.querySelectorAll('#deck .slide').forEach((s) => { s.style.transform = `scale(${k})`; });
+}
+function cierraPresentacion() { $('#deck').hidden = true; $('#deck').innerHTML = ''; document.body.classList.remove('con-deck'); if (document.fullscreenElement) document.exitFullscreen(); }
+
 // ---------- tooltip ----------
 const tip = $('#tip');
 function muestraTip(html, e) {
@@ -1584,12 +1847,38 @@ document.addEventListener('dragover', (e) => e.preventDefault());
 document.addEventListener('drop', (e) => { e.preventDefault(); if (!$('#trabajo').hidden && e.dataTransfer.files[0]) cargaArchivo(e.dataTransfer.files[0]); });
 $('#otroArchivo').addEventListener('click', () => { input.value = ''; input.click(); });
 $('#hojas').addEventListener('click', (e) => { const b = e.target.closest('[data-hoja]'); if (b) eligeHoja(b.dataset.hoja); });
-$('#encab').addEventListener('change', (e) => { if (e.target.id === 'filaEnc') eligeHoja(S.hoja, Math.max(0, +e.target.value - 1)); });
+$('#encab').addEventListener('change', (e) => {
+  if (e.target.id === 'filaEnc') eligeHoja(S.hoja, Math.max(0, +e.target.value - 1));
+  if (e.target.id === 'apartar') { S.apartar = e.target.checked; corre(); }
+});
 $('#analisis').addEventListener('click', (e) => { const b = e.target.closest('[data-an]'); if (b) eligeAnalisis(b.dataset.an); });
-$('#params').addEventListener('change', (e) => { const p = e.target.dataset.p; if (!p) return; S.params[p] = e.target.value; corre(); });
+$('#presentar').addEventListener('click', abrePresentacion);
+$('#deck').addEventListener('click', (e) => {
+  const b = e.target.closest('[data-d]'); if (!b) return;
+  const d = b.dataset.d;
+  if (d === 'prev') { deckI--; muestraDiapo(); } else if (d === 'next') { deckI++; muestraDiapo(); }
+  else if (d === 'cerrar') cierraPresentacion();
+  else if (d === 'pdf') window.print();
+  else if (d === 'full') { if (document.fullscreenElement) document.exitFullscreen(); else $('#deck').requestFullscreen().catch(() => {}); }
+});
+document.addEventListener('keydown', (e) => {
+  if ($('#deck').hidden) return;
+  if (e.key === 'ArrowRight' || e.key === 'PageDown' || e.key === ' ') { e.preventDefault(); deckI++; muestraDiapo(); }
+  else if (e.key === 'ArrowLeft' || e.key === 'PageUp') { e.preventDefault(); deckI--; muestraDiapo(); }
+  else if (e.key === 'Home') { deckI = 0; muestraDiapo(); } else if (e.key === 'End') { deckI = 1e9; muestraDiapo(); }
+  else if (e.key === 'Escape' && !document.fullscreenElement) cierraPresentacion();
+});
+addEventListener('resize', ajustaDiapo);
+document.addEventListener('fullscreenchange', () => setTimeout(ajustaDiapo, 50));
+$('#params').addEventListener('change', (e) => {
+  const p = e.target.dataset.p; if (!p) return; S.params[p] = e.target.value;
+  // solo se recuerda lo que el usuario eligió a mano, no lo que la app adivinó
+  const mem = lee('mecha-analisis:campos2') || {}; mem[firma() + '#' + S.an] = { ...(mem[firma() + '#' + S.an] || {}), [p]: e.target.value }; guarda('mecha-analisis:campos2', mem);
+  corre();
+});
 
 // gancho para pruebas locales
-window.__analisis = { abreLibro, S, eligeHoja, eligeAnalisis };
+window.__analisis = { abreLibro, S, eligeHoja, eligeAnalisis, abrePresentacion };
 
 </script>
 </body>
